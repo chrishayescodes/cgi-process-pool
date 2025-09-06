@@ -10,7 +10,7 @@ TARGETS := $(shell ./discovery/discovery.py targets 2>/dev/null || echo "build/s
 
 .PHONY: all clean test run-pool run-demo run-yarp check-deps samples discover start stop restart status cleanup
 
-all: $(BUILD_DIR) $(TARGETS)
+all: $(BUILD_DIR) $(TARGETS) proxy/CGIProxy/appsettings.json
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -25,12 +25,19 @@ Makefile.rules: discovery/manifest.json discovery/discovery.py
 	@./discovery/discovery.py rules >> $@ 2>/dev/null || echo "# Failed to generate rules" >> $@
 	@echo "✓ Generated build rules from manifest.json"
 
+# Generate YARP proxy configuration from manifest.json
+proxy/CGIProxy/appsettings.json: discovery/manifest.json proxy/CGIProxy/appsettings.base.json scripts/generate-yarp-config.py
+	@echo "🔧 Generating YARP proxy configuration from manifest..."
+	python3 scripts/generate-yarp-config.py discovery/manifest.json proxy/CGIProxy/appsettings.json
+	@echo "✅ YARP configuration updated"
+
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f /tmp/cgi_upstreams.conf
 	rm -f Makefile.rules
 	rm -f proxy/CGIProxy/appsettings.json
-	@echo "✓ Cleaned build artifacts"
+	git clean -dfx
+	@echo "✓ Cleaned build artifacts and untracked files"
 
 # Discovery commands
 discover:
