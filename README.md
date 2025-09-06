@@ -5,11 +5,12 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 ## ✨ Features
 
 - **🔧 CGI Process Pool**: C-based HTTP servers with socket communication
+- **🐍 Python CGI Support**: Full Python integration with automated tooling
 - **⚡ YARP Reverse Proxy**: Modern .NET-based load balancing and routing  
 - **📊 Integrated Admin Dashboard**: Real-time monitoring with live metrics
 - **🔄 Load Balancing**: Round-robin distribution with health checks
 - **📈 Request Tracking**: Detailed metrics and analytics
-- **🚀 Automated Service Addition**: One-command CGI app integration
+- **🚀 Automated Service Addition**: One-command CGI app integration (C & Python)
 - **🏥 Health Monitoring**: Automatic failover and process management
 
 ## 🚀 Quick Start
@@ -42,15 +43,15 @@ make run-yarp
 Add a complete new CGI service with one command:
 
 ```bash
-# Add an "orders" service with 2 instances on ports 8005-8006
+# Add a C-based "orders" service with 2 instances on ports 8005-8006
 ./add_cgi_app.sh orders 8005 2
 
-# Add a "products" service with 3 instances  
-./add_cgi_app.sh products 8007 3
+# Add a Python-based "analytics" service with 3 instances  
+./add_python_cgi_app.sh analytics 8007 3
 ```
 
 **What this does automatically:**
-- ✅ Creates complete C source code
+- ✅ Creates complete C or Python source code
 - ✅ Updates YARP configuration 
 - ✅ Configures load balancing and health checks
 - ✅ Integrates with admin dashboard
@@ -80,19 +81,25 @@ done
 
 ```
 cgi-process-pool/
+├── 📦 Sample Applications
+│   ├── .samples/                # Sample registry and applications
+│   │   ├── samples.json         # Editable sample manifest
+│   │   ├── c/                   # C language samples
+│   │   ├── python/              # Python language samples
+│   │   └── templates/           # Service templates
+│   └── sample_manager.py        # Sample discovery and management
 ├── 🔧 Core Services
-│   ├── search.c                 # Search CGI service
-│   ├── auth.c                   # Auth CGI service  
 │   └── pool_manager.py          # Process lifecycle manager
 ├── 🌐 YARP Proxy
 │   └── proxy/CGIProxy/          # Reverse proxy + admin UI
 ├── 🤖 Automation
-│   ├── add_cgi_app.sh          # Automated service addition
+│   ├── add_cgi_app.sh          # C service automation
+│   ├── add_python_cgi_app.sh   # Python service automation
 │   └── check_dependencies.sh   # System requirements checker
 ├── 📚 Documentation  
 │   └── .docs/                   # Comprehensive guides
 └── ⚙️ Build System
-    ├── Makefile                 # Build automation
+    ├── Makefile                 # Build automation with sample discovery
     └── demo.sh                  # Legacy demo
 ```
 
@@ -101,7 +108,9 @@ cgi-process-pool/
 | Document | Description |
 |----------|-------------|
 | **[Architecture Guide](.docs/ARCHITECTURE.md)** | System architecture and components |
-| **[Adding CGI Apps](.docs/ADDING_CGI_APPS.md)** | Automated service integration guide |
+| **[Sample Applications](.samples/README.md)** | Complete sample registry and usage guide |
+| **[Adding CGI Apps](.docs/ADDING_CGI_APPS.md)** | Automated C service integration guide |
+| **[Python CGI Integration](.docs/PYTHON_CGI_INTEGRATION.md)** | Complete Python service integration guide |
 | **[Manual Pool Setup](.docs/ADDING_NEW_POOLS.md)** | Step-by-step manual process |
 | **[Original POC](.docs/cgi_pool_poc.md)** | Initial proof of concept |
 
@@ -122,8 +131,13 @@ Client → YARP Proxy (8080) → CGI Pool (8000-8002) → Response
 ## 🔧 Available Commands
 
 ```bash
+# Sample Management
+make samples         # List available samples
+make samples-info    # Detailed sample information
+./sample_manager.py info <sample>  # Specific sample details
+
 # Build and test
-make all              # Build all CGI services
+make all              # Build all CGI services with sample discovery
 make test            # Run basic functionality tests  
 make clean           # Clean build artifacts
 
@@ -133,7 +147,8 @@ make run-yarp        # Start YARP proxy with admin dashboard
 make run-demo        # Legacy nginx demo
 
 # Add services  
-./add_cgi_app.sh <name> <port> [instances]
+./add_cgi_app.sh <name> <port> [instances]           # Add C service
+./add_python_cgi_app.sh <name> <port> [instances]   # Add Python service
 
 # Check system
 make check-deps      # Verify dependencies

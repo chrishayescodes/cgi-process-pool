@@ -2,17 +2,17 @@ CC = gcc
 CFLAGS = -Wall -O2 -pthread
 TARGETS = search.cgi auth.cgi
 
-.PHONY: all clean test run-pool run-demo run-yarp check-deps
+.PHONY: all clean test run-pool run-demo run-yarp check-deps samples
 
-all: $(TARGETS)
+all: samples $(TARGETS)
 
-search.cgi: search.c
+search.cgi: .samples/c/search.c
 	$(CC) $(CFLAGS) -o $@ $<
-	@echo "✓ Built search.cgi"
+	@echo "✓ Built search.cgi from samples"
 
-auth.cgi: auth.c
+auth.cgi: .samples/c/auth.c
 	$(CC) $(CFLAGS) -o $@ $<
-	@echo "✓ Built auth.cgi"
+	@echo "✓ Built auth.cgi from samples"
 
 clean:
 	rm -f $(TARGETS)
@@ -33,6 +33,16 @@ test: all
 	sleep 1; \
 	curl -s "http://localhost:9001?user=test" | grep -q "token" && echo "✓ auth.cgi test passed" || echo "✗ auth.cgi test failed"; \
 	kill $$PID 2>/dev/null || true
+
+samples:
+	@echo "📋 Available samples:"
+	@python3 sample_manager.py list
+	@echo ""
+	@echo "ℹ️  Use 'make samples-info' for detailed information"
+	@echo "ℹ️  Use './sample_manager.py info <sample>' for specific details"
+
+samples-info:
+	@python3 sample_manager.py
 
 run-pool: all
 	python3 pool_manager.py
