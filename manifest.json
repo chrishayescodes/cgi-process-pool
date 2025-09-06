@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "description": "CGI Process Pool Sample Applications Registry",
+  "samples": {
+    "search": {
+      "name": "Search Service",
+      "description": "Sample search API with JSON responses and query parameter handling",
+      "language": "c",
+      "type": "core",
+      "path": ".samples/c/search.c",
+      "executable": "search.cgi",
+      "default_ports": [8000, 8001],
+      "health_check": "/?q=health",
+      "api_endpoint": "/api/search",
+      "examples": [
+        "curl \"http://localhost:8080/api/search?q=test\"",
+        "curl \"http://localhost:8080/api/search?q=health\""
+      ],
+      "features": [
+        "Query parameter parsing",
+        "JSON response format",
+        "Process identification",
+        "Basic HTTP server"
+      ]
+    },
+    "auth": {
+      "name": "Authentication Service", 
+      "description": "Sample authentication API with user validation and token generation",
+      "language": "c",
+      "type": "core",
+      "path": ".samples/c/auth.c",
+      "executable": "auth.cgi",
+      "default_ports": [8002],
+      "health_check": "/?user=health",
+      "api_endpoint": "/api/auth",
+      "examples": [
+        "curl \"http://localhost:8080/api/auth?user=demo\"",
+        "curl \"http://localhost:8080/api/auth?user=health\""
+      ],
+      "features": [
+        "User parameter validation",
+        "Token generation simulation",
+        "JSON response format",
+        "Single instance design"
+      ]
+    },
+    "python_cgi": {
+      "name": "Python CGI Service",
+      "description": "Sample Python CGI HTTP server with GET/POST support and comprehensive JSON responses",
+      "language": "python",
+      "type": "core",
+      "path": ".samples/python/sample_python_cgi.py",
+      "executable": "sample_python_cgi.py",
+      "default_ports": [8003],
+      "health_check": "/?service=health",
+      "api_endpoint": "/api/python",
+      "examples": [
+        "curl \"http://localhost:8080/api/python?service=demo&data=test\"",
+        "curl \"http://localhost:8080/api/python?service=health\"",
+        "curl -X POST -H \"Content-Type: application/json\" -d '{\"test\":\"data\"}' \"http://localhost:8080/api/python\""
+      ],
+      "features": [
+        "HTTP GET/POST request handling",
+        "Query parameter parsing",
+        "JSON request/response processing",
+        "Process identification",
+        "Threading support",
+        "Signal handling",
+        "Python version information",
+        "CORS headers"
+      ]
+    }
+  },
+  "templates": {
+    "c_service": {
+      "name": "C Service Template",
+      "description": "Template for creating new C-based CGI services",
+      "language": "c",
+      "path": ".samples/templates/c_service_template.c",
+      "features": [
+        "HTTP request parsing",
+        "JSON response generation", 
+        "Signal handling",
+        "Process identification",
+        "Health check support"
+      ]
+    },
+    "python_service": {
+      "name": "Python Service Template",
+      "description": "Template for creating new Python-based CGI services",
+      "language": "python",
+      "path": ".samples/templates/python_service_template.py",
+      "features": [
+        "HTTP server framework",
+        "GET/POST request handling",
+        "JSON request/response processing",
+        "Signal handling",
+        "Process identification",
+        "Threading support",
+        "Health check support"
+      ]
+    }
+  },
+  "categories": {
+    "core": {
+      "name": "Core Services",
+      "description": "Essential services that demonstrate basic CGI functionality"
+    },
+    "template": {
+      "name": "Service Templates",
+      "description": "Reusable templates for creating new services"
+    }
+  },
+  "metadata": {
+    "created": "2025-09-06T02:44:00Z",
+    "updated": "2025-09-06T02:52:00Z",
+    "schema_version": "1.0",
+    "compatible_versions": ["1.0.0+"]
+  }
+}

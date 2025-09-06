@@ -1,61 +1,110 @@
+# Dynamic Makefile for CGI Process Pool
+# Uses sample_discovery.py to automatically discover and build samples
+
 CC = gcc
 CFLAGS = -Wall -O2 -pthread
 BUILD_DIR = build
-TARGETS = $(BUILD_DIR)/search.cgi $(BUILD_DIR)/auth.cgi
 
-.PHONY: all clean test run-pool run-demo run-yarp check-deps samples
+# Dynamically discover targets from manifest.json
+TARGETS := $(shell ./discovery.py targets 2>/dev/null || echo "build/search.cgi build/auth.cgi")
+
+.PHONY: all clean test run-pool run-demo run-yarp check-deps samples discover
 
 all: $(BUILD_DIR) $(TARGETS)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/search.cgi: .samples/c/search.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $@ $<
-	@echo "✓ Built search.cgi in build/ directory"
+# Include dynamically generated rules
+-include Makefile.rules
 
-$(BUILD_DIR)/auth.cgi: .samples/c/auth.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $@ $<
-	@echo "✓ Built auth.cgi in build/ directory"
+# Generate build rules from manifest.json
+Makefile.rules: manifest.json discovery.py
+	@echo "# Auto-generated build rules from manifest.json" > $@
+	@echo "# Generated at: $$(date)" >> $@
+	@./discovery.py rules >> $@ 2>/dev/null || echo "# Failed to generate rules" >> $@
+	@echo "✓ Generated build rules from manifest.json"
 
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f /tmp/cgi_upstreams.conf
+	rm -f Makefile.rules
 	@echo "✓ Cleaned build artifacts"
 
+# Discovery commands
+discover:
+	@echo "🔍 Discovering applications from manifest.json..."
+	@./discovery.py list
+
+discover-c:
+	@echo "🔍 C language applications:"
+	@./discovery.py list --language c
+
+discover-python:
+	@echo "🔍 Python language applications:"
+	@./discovery.py list --language python
+
+sample-info:
+	@if [ -z "$(SAMPLE)" ]; then \
+		echo "Usage: make sample-info SAMPLE=<name>"; \
+		echo "Available applications:"; \
+		./discovery.py list --format text; \
+	else \
+		./discovery.py info --name $(SAMPLE); \
+	fi
+
+# Generate pool configuration
+pool-config:
+	@echo "📋 Pool Manager Configuration:"
+	@./discovery.py pool-config
+
 test: all
-	@echo "Testing search.cgi..."
-	@./$(BUILD_DIR)/search.cgi 9000 &
-	@PID=$$!; \
-	sleep 1; \
-	curl -s "http://localhost:9000?q=test" | grep -q "results" && echo "✓ search.cgi test passed" || echo "✗ search.cgi test failed"; \
-	kill $$PID 2>/dev/null || true
-	
-	@echo "Testing auth.cgi..."
-	@./$(BUILD_DIR)/auth.cgi 9001 &
-	@PID=$$!; \
-	sleep 1; \
-	curl -s "http://localhost:9001?user=test" | grep -q "token" && echo "✓ auth.cgi test passed" || echo "✗ auth.cgi test failed"; \
-	kill $$PID 2>/dev/null || true
+	@echo "Testing discovered samples..."
+	@for target in $(TARGETS); do \
+		echo "Testing $$target..."; \
+		if [ -f "$$target" ]; then \
+			base=$$(basename $$target .cgi); \
+			port=$$((9000 + $$RANDOM % 1000)); \
+			./$$target $$port & \
+			PID=$$!; \
+			sleep 1; \
+			if [ "$$base" = "search" ]; then \
+				curl -s "http://localhost:$$port?q=test" | grep -q "results" && echo "✓ $$target test passed" || echo "✗ $$target test failed"; \
+			elif [ "$$base" = "auth" ]; then \
+				curl -s "http://localhost:$$port?user=test" | grep -q "token" && echo "✓ $$target test passed" || echo "✗ $$target test failed"; \
+			fi; \
+			kill $$PID 2>/dev/null || true; \
+		fi; \
+	done
 
 samples:
-	@echo "📋 Available samples in .samples/ directory:"
-	@echo "  - C samples: .samples/c/"
-	@echo "  - Python samples: .samples/python/"
-	@echo "  - Manifest: .samples/samples.json"
-	@echo ""
-	@echo "ℹ️  Check .samples/samples.json for detailed information"
+	@echo "📋 Available applications in manifest:"
+	@./discovery.py list
 
 samples-info:
-	@echo "📋 Sample Information:"
-	@cat .samples/samples.json | python3 -m json.tool
+	@echo "📋 Application Manifest Information:"
+	@cat manifest.json | python3 -m json.tool
+
+# Add new sample to registry
+add-sample:
+	@echo "🎯 To add a new application:"
+	@echo "1. Add your source file anywhere (apps can live anywhere)"
+	@echo "2. Update manifest.json with application metadata"
+	@echo "3. Run 'make' to build (C apps will auto-build)"
+	@echo ""
+	@echo "Example entry for manifest.json:"
+	@echo '  "my_service": {'
+	@echo '    "name": "My Service",'
+	@echo '    "description": "Description here",'
+	@echo '    "language": "c",'
+	@echo '    "type": "core",'
+	@echo '    "path": "src/my_service.c",'
+	@echo '    "executable": "my_service.cgi",'
+	@echo '    "default_ports": [8003, 8004]'
+	@echo '  }'
 
 run-pool: all
 	python3 pool_manager.py
-
-run-demo: all
-	chmod +x demo.sh
-	./demo.sh
 
 run-yarp: all
 	@echo "Starting YARP proxy with integrated admin dashboard on port 8080..."
@@ -72,17 +121,29 @@ check-deps:
 	@./check_dependencies.sh
 
 help:
-	@echo "CGI Process Pool - Makefile targets:"
-	@echo "  make all        - Build all CGI executables"
-	@echo "  make clean      - Remove built files"
-	@echo "  make test       - Run basic tests on CGI executables"
-	@echo "  make check-deps - Check if all dependencies are installed"
-	@echo "  make install-deps - Install Python dependencies"
-	@echo "  make run-pool   - Start the CGI pool manager"
-	@echo "  make run-yarp   - Start YARP proxy with integrated admin dashboard"
-	@echo "  make run-demo   - Run the nginx demo (legacy)"
-	@echo "  make help       - Show this help message"
+	@echo "CGI Process Pool - Dynamic Makefile"
 	@echo ""
-	@echo "Recommended workflow:"
-	@echo "  1. make run-pool   (start CGI processes)"
-	@echo "  2. make run-yarp   (start YARP proxy with admin at :8080/admin)"
+	@echo "Discovery Commands:"
+	@echo "  make discover       - List all discovered samples"
+	@echo "  make discover-c     - List C language samples"
+	@echo "  make discover-python - List Python language samples"
+	@echo "  make sample-info SAMPLE=<name> - Show details about a sample"
+	@echo "  make pool-config    - Show pool manager configuration"
+	@echo "  make add-sample     - Instructions for adding new samples"
+	@echo ""
+	@echo "Build Commands:"
+	@echo "  make all           - Build all discovered CGI executables"
+	@echo "  make clean         - Remove built files and generated rules"
+	@echo "  make test          - Run tests on discovered samples"
+	@echo ""
+	@echo "Runtime Commands:"
+	@echo "  make run-pool      - Start the CGI pool manager"
+	@echo "  make run-yarp      - Start YARP proxy with admin dashboard"
+	@echo ""
+	@echo "Other Commands:"
+	@echo "  make check-deps    - Check if all dependencies are installed"
+	@echo "  make install-deps  - Install Python dependencies"
+	@echo "  make help          - Show this help message"
+	@echo ""
+	@echo "The build system automatically discovers samples from .samples/samples.json"
+	@echo "and generates appropriate build rules. Edit samples.json to add new services."

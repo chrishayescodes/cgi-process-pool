@@ -10,6 +10,7 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 - **📊 Integrated Admin Dashboard**: Real-time monitoring with live metrics
 - **🔄 Load Balancing**: Round-robin distribution with health checks
 - **📈 Request Tracking**: Detailed metrics and analytics
+- **🔍 Dynamic Discovery**: Automatic sample detection and configuration from JSON manifest
 - **🚀 Automated Service Addition**: One-command CGI app integration (C & Python)
 - **🏥 Health Monitoring**: Automatic failover and process management
 
@@ -20,19 +21,28 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 make check-deps
 ```
 
-### 2. Build and Run
+### 2. Discover and Build Services
 ```bash
-# Build all services
-make all
+# Discover available samples
+make discover
 
-# Terminal 1: Start process pool
+# Get details about a specific sample
+make sample-info SAMPLE=search
+
+# Build all discovered services
+make all
+```
+
+### 3. Run the System
+```bash
+# Terminal 1: Start process pool (auto-configured from samples.json)
 make run-pool
 
 # Terminal 2: Start YARP proxy with admin dashboard  
 make run-yarp
 ```
 
-### 3. Access Your System
+### 4. Access Your System
 - **🌐 Admin Dashboard**: http://localhost:8080/admin
 - **📊 API Metrics**: http://localhost:8080/api/metrics  
 - **🔍 Search API**: http://localhost:8080/api/search?q=test
@@ -56,6 +66,51 @@ Add a complete new CGI service with one command:
 - ✅ Configures load balancing and health checks
 - ✅ Integrates with admin dashboard
 - ✅ Builds and tests the service
+
+## 🔍 Dynamic Discovery System
+
+The build system automatically discovers samples from the JSON manifest and configures everything dynamically:
+
+### Discovery Commands
+```bash
+# List all available samples
+make discover
+
+# Filter by language
+make discover-c         # C samples only
+make discover-python    # Python samples only  
+
+# Get detailed information about a sample
+make sample-info SAMPLE=search
+
+# Show pool manager configuration
+make pool-config
+```
+
+### Adding New Samples
+1. Place your source in `.samples/c/` or `.samples/python/`
+2. Add entry to `.samples/samples.json`:
+```json
+{
+  "my_service": {
+    "name": "My Service",
+    "description": "Description here", 
+    "language": "c",
+    "type": "core",
+    "path": "c/my_service.c",
+    "executable": "my_service.cgi",
+    "default_ports": [8005, 8006]
+  }
+}
+```
+3. Run `make` to auto-build and integrate
+
+**Discovery Features:**
+- ✅ Automatic build rule generation
+- ✅ Dynamic pool configuration  
+- ✅ Language-agnostic integration
+- ✅ Self-documenting samples
+- ✅ Zero manual configuration
 
 ## 🧪 Testing
 

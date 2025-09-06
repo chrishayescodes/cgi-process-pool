@@ -6,8 +6,10 @@ import threading
 import signal
 import sys
 import os
+import json
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 
 class CGIPool:
     def __init__(self, script_path, min_processes=2, max_processes=5):
@@ -30,7 +32,11 @@ class CGIPool:
             self.next_port += 1
             
             try:
-                process = subprocess.Popen([self.script_path, str(port)], 
+                if self.script_path.startswith('python3 '):
+                    cmd = self.script_path.split(' ') + [str(port)]
+                else:
+                    cmd = [self.script_path, str(port)]
+                process = subprocess.Popen(cmd, 
                                          stdout=subprocess.PIPE, 
                                          stderr=subprocess.PIPE)
                 
@@ -183,6 +189,58 @@ class PoolManager:
         print("✅ All pools terminated")
         print("=" * 50)
 
+def load_manifest():
+    """Load manifest.json - required for operation"""
+    manifest_path = Path("manifest.json")
+    if not manifest_path.exists():
+        print(f"❌ {manifest_path} not found", file=sys.stderr)
+        print("The manifest.json file is required for pool configuration.", file=sys.stderr)
+        return None
+    
+    try:
+        with open(manifest_path, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"❌ Error parsing {manifest_path}: {e}")
+        return None
+
+def configure_from_manifest(manager, manifest):
+    """Configure pools from manifest.json"""
+    samples = manifest.get('samples', {})
+    configured = 0
+    
+    for name, sample in samples.items():
+        language = sample.get('language')
+        
+        if language == 'c':
+            exec_name = sample.get('executable', f'{name}.cgi')
+            exec_path = f'./build/{exec_name}'
+            
+            if os.path.exists(exec_path):
+                ports = sample.get('default_ports', [])
+                if len(ports) >= 2:
+                    min_proc, max_proc = 2, len(ports) + 1
+                else:
+                    min_proc, max_proc = 1, 3
+                
+                manager.add_pool(name, exec_path, min_processes=min_proc, max_processes=max_proc)
+                print(f"✓ Configured {name} pool: {exec_path} ({min_proc}-{max_proc} processes)")
+                configured += 1
+            else:
+                print(f"⚠️  {exec_path} not found, skipping {name}")
+        
+        elif language == 'python':
+            exec_path = Path(sample.get('path'))
+            
+            if exec_path.exists():
+                manager.add_pool(name, f'python3 {exec_path}', min_processes=1, max_processes=3)
+                print(f"✓ Configured {name} pool: python3 {exec_path}")
+                configured += 1
+            else:
+                print(f"⚠️  {exec_path} not found, skipping {name}")
+    
+    return configured
+
 def signal_handler(signum, frame):
     """Handle shutdown signals"""
     if hasattr(signal_handler, 'manager'):
@@ -196,19 +254,29 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    if os.path.exists('./build/search.cgi'):
-        manager.add_pool('search', './build/search.cgi', min_processes=2, max_processes=5)
+    manifest = load_manifest()
+    if manifest:
+        configured = configure_from_manifest(manager, manifest)
+        if configured > 0:
+            print(f"🔍 Discovered and configured {configured} pools from manifest.json")
+        else:
+            print("❌ No valid applications found in manifest. Build applications first with 'make'.")
+            sys.exit(1)
     else:
-        print("⚠️  build/search.cgi not found, skipping")
-    
-    if os.path.exists('./build/auth.cgi'):
-        manager.add_pool('auth', './build/auth.cgi', min_processes=1, max_processes=3)
-    else:
-        print("⚠️  build/auth.cgi not found, skipping")
-    
-    if not manager.pools:
-        print("❌ No CGI executables found. Please build them first.")
-        sys.exit(1)
+        print("📋 Using manual configuration...")
+        if os.path.exists('./build/search.cgi'):
+            manager.add_pool('search', './build/search.cgi', min_processes=2, max_processes=5)
+        else:
+            print("⚠️  build/search.cgi not found, skipping")
+        
+        if os.path.exists('./build/auth.cgi'):
+            manager.add_pool('auth', './build/auth.cgi', min_processes=1, max_processes=3)
+        else:
+            print("⚠️  build/auth.cgi not found, skipping")
+        
+        if not manager.pools:
+            print("❌ No CGI executables found. Please build them first.")
+            sys.exit(1)
     
     try:
         manager.start()
