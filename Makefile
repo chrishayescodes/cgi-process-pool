@@ -44,6 +44,10 @@ discover-python:
 	@echo "🔍 Python language applications:"
 	@./discovery.py list --language python
 
+discover-csharp:
+	@echo "🔍 C# script applications:"
+	@./discovery.py list --language csharp
+
 sample-info:
 	@if [ -z "$(SAMPLE)" ]; then \
 		echo "Usage: make sample-info SAMPLE=<name>"; \
@@ -127,6 +131,7 @@ help:
 	@echo "  make discover       - List all discovered samples"
 	@echo "  make discover-c     - List C language samples"
 	@echo "  make discover-python - List Python language samples"
+	@echo "  make discover-csharp - List C# script samples"
 	@echo "  make sample-info SAMPLE=<name> - Show details about a sample"
 	@echo "  make pool-config    - Show pool manager configuration"
 	@echo "  make add-sample     - Instructions for adding new samples"
@@ -140,10 +145,15 @@ help:
 	@echo "  make run-pool      - Start the CGI pool manager"
 	@echo "  make run-yarp      - Start YARP proxy with admin dashboard"
 	@echo ""
+	@echo "Service Addition Commands:"
+	@echo "  ./add_cgi_app.sh <name> <port> [instances]        - Add C service"
+	@echo "  ./add_python_cgi_app.sh <name> <port> [instances] - Add Python service"
+	@echo "  ./add_csharp_cgi_app.sh <name> <port> [instances] - Add C# script service"
+	@echo ""
 	@echo "Other Commands:"
 	@echo "  make check-deps    - Check if all dependencies are installed"
 	@echo "  make install-deps  - Install Python dependencies"
 	@echo "  make help          - Show this help message"
 	@echo ""
-	@echo "The build system automatically discovers samples from .samples/samples.json"
-	@echo "and generates appropriate build rules. Edit samples.json to add new services."
+	@echo "The build system automatically discovers samples from manifest.json"
+	@echo "and generates appropriate build rules. Edit manifest.json to add new services."

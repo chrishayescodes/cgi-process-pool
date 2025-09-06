@@ -69,6 +69,32 @@
         "Python version information",
         "CORS headers"
       ]
+    },
+    "csharp_script": {
+      "name": "C# Script Service",
+      "description": "Sample C# script CGI HTTP server using dotnet-script with async/await support",
+      "language": "csharp",
+      "type": "core",
+      "path": ".samples/csharp/sample_csharp_cgi.csx",
+      "executable": "sample_csharp_cgi.csx",
+      "default_ports": [8004],
+      "health_check": "/?service=health",
+      "api_endpoint": "/api/csharp",
+      "examples": [
+        "curl \"http://localhost:8080/api/csharp?service=demo&data=test\"",
+        "curl \"http://localhost:8080/api/csharp?service=health\""
+      ],
+      "features": [
+        "C# script execution with dotnet-script",
+        "HTTP request handling with TcpListener",
+        "Async/await pattern implementation",
+        "Query parameter parsing",
+        "JSON serialization with System.Text.Json",
+        "Process identification",
+        "Signal handling with CancelKeyPress",
+        "NuGet package references",
+        "CORS headers"
+      ]
     }
   },
   "templates": {
@@ -97,6 +123,22 @@
         "Signal handling",
         "Process identification",
         "Threading support",
+        "Health check support"
+      ]
+    },
+    "csharp_service": {
+      "name": "C# Script Service Template",
+      "description": "Template for creating new C# script-based CGI services",
+      "language": "csharp",
+      "path": ".samples/templates/csharp_service_template.csx",
+      "features": [
+        "C# script execution with dotnet-script",
+        "HTTP server framework with TcpListener",
+        "Async/await request handling",
+        "JSON request/response processing",
+        "Signal handling",
+        "Process identification",
+        "NuGet package support",
         "Health check support"
       ]
     }

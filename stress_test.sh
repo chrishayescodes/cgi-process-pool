@@ -24,6 +24,7 @@ PASSED_TESTS=0
 FAILED_TESTS=0
 TOTAL_RESPONSE_TIME=0
 RESPONSE_COUNT=0
+CSHARP_AVAILABLE=false
 
 echo -e "${BLUE}🧪 CGI Process Pool Stress Test${NC}"
 echo "========================================"
@@ -47,6 +48,15 @@ check_system() {
     if ! curl -s "${YARP_URL}/api/auth?user=test" > /dev/null; then
         echo -e "${RED}❌ Auth service not responding${NC}"
         exit 1
+    fi
+
+    # Check C# script service if available
+    if curl -s "${YARP_URL}/api/csharp?service=test" > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ C# script service available${NC}"
+        CSHARP_AVAILABLE=true
+    else
+        echo -e "${YELLOW}ℹ️  C# script service not available (optional)${NC}"
+        CSHARP_AVAILABLE=false
     fi
     
     echo -e "${GREEN}✅ System is running${NC}"
@@ -118,9 +128,20 @@ test_concurrency() {
     # Launch concurrent requests
     for ((i=1; i<=CONCURRENT_REQUESTS; i++)); do
         (
-            local service=$( [ $((i % 2)) -eq 0 ] && echo "search" || echo "auth" )
-            local params=$( [ "$service" = "search" ] && echo "q=concurrent$i" || echo "user=test$i" )
-            local expected=$( [ "$service" = "search" ] && echo "results" || echo "token" )
+            # Distribute requests across available services
+            if [[ "$CSHARP_AVAILABLE" == "true" ]]; then
+                # Include C# script in rotation
+                case $((i % 3)) in
+                    0) service="search"; params="q=concurrent$i"; expected="results" ;;
+                    1) service="auth"; params="user=test$i"; expected="token" ;;
+                    2) service="csharp"; params="service=test&data=concurrent$i"; expected="script_type" ;;
+                esac
+            else
+                # Original behavior without C# script
+                local service=$( [ $((i % 2)) -eq 0 ] && echo "search" || echo "auth" )
+                local params=$( [ "$service" = "search" ] && echo "q=concurrent$i" || echo "user=test$i" )
+                local expected=$( [ "$service" = "search" ] && echo "results" || echo "token" )
+            fi
             
             local result=$(test_request "$service" "$params" "$expected")
             echo "$result" >> "$results_file"
@@ -198,9 +219,20 @@ test_sustained_load() {
         # Send batch of requests
         for i in {1..5}; do
             (
-                local service=$( [ $((request_count % 2)) -eq 0 ] && echo "search" || echo "auth" )
-                local params=$( [ "$service" = "search" ] && echo "q=sustained$request_count" || echo "user=load$request_count" )
-                local expected=$( [ "$service" = "search" ] && echo "results" || echo "token" )
+                # Distribute requests across available services
+                if [[ "$CSHARP_AVAILABLE" == "true" ]]; then
+                    # Include C# script in rotation
+                    case $((request_count % 3)) in
+                        0) service="search"; params="q=sustained$request_count"; expected="results" ;;
+                        1) service="auth"; params="user=load$request_count"; expected="token" ;;
+                        2) service="csharp"; params="service=load&data=sustained$request_count"; expected="script_type" ;;
+                    esac
+                else
+                    # Original behavior without C# script
+                    local service=$( [ $((request_count % 2)) -eq 0 ] && echo "search" || echo "auth" )
+                    local params=$( [ "$service" = "search" ] && echo "q=sustained$request_count" || echo "user=load$request_count" )
+                    local expected=$( [ "$service" = "search" ] && echo "results" || echo "token" )
+                fi
                 
                 if ! test_request "$service" "$params" "$expected" > /dev/null; then
                     error_count=$((error_count + 1))
@@ -270,6 +302,14 @@ test_api_functionality() {
         "auth:user=health:token"
     )
     
+    # Add C# script tests if available
+    if [[ "$CSHARP_AVAILABLE" == "true" ]]; then
+        tests+=(
+            "csharp:service=functionality&data=test:script_type"
+            "csharp:service=health:status"
+        )
+    fi
+    
     local passed_api_tests=0
     
     for test in "${tests[@]}"; do
@@ -300,9 +340,13 @@ check_system_resources() {
     
     # Check CPU and memory usage of CGI processes
     local cgi_processes=$(pgrep -f "\.cgi" | wc -l)
+    local python_processes=$(pgrep -f "python.*\.py" | wc -l)
+    local csharp_processes=$(pgrep -f "dotnet-script.*\.csx" | wc -l)
     local yarp_processes=$(pgrep -f "dotnet.*CGIProxy" | wc -l)
     
-    echo -e "   CGI processes running: ${cgi_processes}"
+    echo -e "   C CGI processes running: ${cgi_processes}"
+    echo -e "   Python CGI processes running: ${python_processes}"
+    echo -e "   C# script processes running: ${csharp_processes}"
     echo -e "   YARP processes running: ${yarp_processes}"
     
     # Check average response time
@@ -373,6 +417,8 @@ main() {
 show_help() {
     echo "CGI Process Pool Stress Test"
     echo ""
+    echo "Tests C, Python, and C# script CGI services with comprehensive load testing."
+    echo ""
     echo "Usage: $0 [options]"
     echo ""
     echo "Options:"
@@ -381,6 +427,11 @@ show_help() {
     echo "  -t, --total N          Total number of requests (default: $TOTAL_REQUESTS)"
     echo "  -d, --duration N       Sustained load test duration in seconds (default: $TEST_DURATION)"
     echo "  -u, --url URL          Target URL (default: $YARP_URL)"
+    echo ""
+    echo "Tested Services:"
+    echo "  • Search API (C)       - /api/search"
+    echo "  • Auth API (C)         - /api/auth"
+    echo "  • C# Script API        - /api/csharp (auto-detected)"
     echo ""
     echo "Examples:"
     echo "  $0                      # Run with default settings"

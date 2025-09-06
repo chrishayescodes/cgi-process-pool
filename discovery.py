@@ -52,6 +52,19 @@ def get_python_samples(manifest):
             })
     return samples
 
+def get_csharp_samples(manifest):
+    """Get all C# language samples"""
+    samples = []
+    for name, sample in manifest.get('samples', {}).items():
+        if sample.get('language') == 'csharp':
+            samples.append({
+                'name': name,
+                'path': Path(sample['path']),
+                'executable': sample.get('executable', f"{name}.csx"),
+                'ports': sample.get('default_ports', [])
+            })
+    return samples
+
 def get_sample_by_name(manifest, name):
     """Get a specific sample by name"""
     return manifest.get('samples', {}).get(name)
@@ -123,6 +136,20 @@ def list_pool_configs(manifest):
             'ports': ports
         })
     
+    # C# samples
+    for sample in get_csharp_samples(manifest):
+        name = sample['name']
+        exec_path = str(sample['path'])
+        ports = sample['ports']
+        
+        configs.append({
+            'name': name,
+            'executable': f"dotnet-script {exec_path}",
+            'min_processes': 1,
+            'max_processes': 3,
+            'ports': ports
+        })
+    
     return configs
 
 def main():
@@ -130,7 +157,7 @@ def main():
     parser.add_argument('command', choices=['targets', 'rules', 'list', 'info', 'pool-config'],
                         help='Command to execute')
     parser.add_argument('--name', help='Sample name for info command')
-    parser.add_argument('--language', choices=['c', 'python', 'all'], default='all',
+    parser.add_argument('--language', choices=['c', 'python', 'csharp', 'all'], default='all',
                         help='Filter by language')
     parser.add_argument('--format', choices=['text', 'json', 'makefile'], default='text',
                         help='Output format')

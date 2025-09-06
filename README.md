@@ -6,12 +6,13 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 
 - **🔧 CGI Process Pool**: C-based HTTP servers with socket communication
 - **🐍 Python CGI Support**: Full Python integration with automated tooling
+- **🔷 C# Script Support**: C# script execution with dotnet-script runtime
 - **⚡ YARP Reverse Proxy**: Modern .NET-based load balancing and routing  
 - **📊 Integrated Admin Dashboard**: Real-time monitoring with live metrics
 - **🔄 Load Balancing**: Round-robin distribution with health checks
 - **📈 Request Tracking**: Detailed metrics and analytics
 - **🔍 Dynamic Discovery**: Automatic sample detection and configuration from JSON manifest
-- **🚀 Automated Service Addition**: One-command CGI app integration (C & Python)
+- **🚀 Automated Service Addition**: One-command CGI app integration (C, Python & C#)
 - **🏥 Health Monitoring**: Automatic failover and process management
 
 ## 🚀 Quick Start
@@ -47,6 +48,7 @@ make run-yarp
 - **📊 API Metrics**: http://localhost:8080/api/metrics  
 - **🔍 Search API**: http://localhost:8080/api/search?q=test
 - **🔐 Auth API**: http://localhost:8080/api/auth?user=demo
+- **🔷 C# Script API**: http://localhost:8080/api/csharp?service=demo
 
 ## 🤖 Adding New Services (Automated)
 
@@ -58,10 +60,13 @@ Add a complete new CGI service with one command:
 
 # Add a Python-based "analytics" service with 3 instances  
 ./add_python_cgi_app.sh analytics 8007 3
+
+# Add a C# script-based "orders" service with 2 instances
+./add_csharp_cgi_app.sh orders 8009 2
 ```
 
 **What this does automatically:**
-- ✅ Creates complete C or Python source code
+- ✅ Creates complete C, Python, or C# script source code
 - ✅ Updates YARP configuration 
 - ✅ Configures load balancing and health checks
 - ✅ Integrates with admin dashboard
@@ -79,6 +84,7 @@ make discover
 # Filter by language
 make discover-c         # C applications only
 make discover-python    # Python applications only  
+make discover-csharp    # C# script applications only  
 
 # Get detailed information about an application
 make sample-info SAMPLE=search
@@ -95,10 +101,10 @@ make pool-config
   "my_service": {
     "name": "My Service",
     "description": "Description here", 
-    "language": "c",
+    "language": "c",        // or "python", "csharp"
     "type": "core",
-    "path": "src/my_service.c",
-    "executable": "my_service.cgi",
+    "path": "src/my_service.c",     // .py or .csx for other languages
+    "executable": "my_service.cgi", // .py or .csx for other languages  
     "default_ports": [8005, 8006]
   }
 }
@@ -119,6 +125,7 @@ make pool-config
 # Test services
 curl "http://localhost:8080/api/search?q=test"
 curl "http://localhost:8080/api/auth?user=demo"
+curl "http://localhost:8080/api/csharp?service=demo"
 
 # Check system health
 curl "http://localhost:8080/api/metrics/summary" | jq
@@ -155,9 +162,10 @@ done
 cgi-process-pool/
 ├── 📦 Sample Applications
 │   ├── .samples/                # Sample registry and applications
-│   │   ├── samples.json         # Editable sample manifest
+│   │   ├── manifest.json        # Editable sample manifest
 │   │   ├── c/                   # C language samples
 │   │   ├── python/              # Python language samples
+│   │   ├── csharp/              # C# script samples  
 │   │   └── templates/           # Service templates
 ├── 🔧 Core Services
 │   └── pool_manager.py          # Process lifecycle manager
@@ -168,6 +176,7 @@ cgi-process-pool/
 ├── 🤖 Automation
 │   ├── add_cgi_app.sh          # C service automation
 │   ├── add_python_cgi_app.sh   # Python service automation
+│   ├── add_csharp_cgi_app.sh   # C# script service automation
 │   ├── stress_test.sh          # Comprehensive load testing
 │   └── check_dependencies.sh   # System requirements checker
 ├── 📚 Documentation  
@@ -223,6 +232,7 @@ make run-demo        # Legacy nginx demo
 # Add services  
 ./add_cgi_app.sh <name> <port> [instances]           # Add C service
 ./add_python_cgi_app.sh <name> <port> [instances]   # Add Python service
+./add_csharp_cgi_app.sh <name> <port> [instances]   # Add C# script service
 
 # Check system
 make check-deps      # Verify dependencies
@@ -272,7 +282,8 @@ make run-demo  # Run with nginx (legacy)
 
 - **GCC**: C compiler with pthread support
 - **Python 3**: Process management  
-- **.NET 8 SDK**: YARP proxy
+- **.NET 8 SDK**: YARP proxy and C# script support
+- **dotnet-script**: For C# script execution (`dotnet tool install -g dotnet-script`)
 - **curl + jq**: Testing tools (optional)
 - **bash**: For automation scripts
 
@@ -288,8 +299,8 @@ Based on stress testing results:
 ## 🎯 Perfect For
 
 - **Learning**: Modern CGI and reverse proxy concepts
-- **Development**: Fast HTTP service prototyping  
+- **Development**: Fast HTTP service prototyping in C, Python, and C#
 - **Architecture**: Microservice patterns with observability
-- **Integration**: .NET ecosystem with C services
+- **Integration**: .NET ecosystem with multi-language service support
 
 This project demonstrates how to build modern, observable CGI-style architectures with comprehensive monitoring and automated service management.
