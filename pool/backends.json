@@ -1,0 +1,195 @@
+{
+  "version": "1.0",
+  "description": "Pool backend definitions for CGI Process Pool system",
+  "backends": {
+    "python_builtin": {
+      "name": "Python Built-in Pool Manager",
+      "description": "Native Python process pool with threading and subprocess management",
+      "type": "native",
+      "runtime": "python3",
+      "capabilities": [
+        "process_lifecycle",
+        "health_monitoring", 
+        "auto_scaling",
+        "load_balancing",
+        "resource_monitoring",
+        "graceful_shutdown"
+      ],
+      "configuration": {
+        "entry_point": "pool/backends/python_builtin.py",
+        "config_file": "pool/config/python_builtin.json",
+        "health_check_interval": 10,
+        "restart_policy": "on_failure",
+        "scaling_strategy": "cpu_based"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "python3",
+            "version": "3.6+",
+            "check_command": "python3 --version"
+          }
+        ],
+        "packages": [
+          {
+            "name": "requests",
+            "install": "pip3 install requests",
+            "check_method": "python_import"
+          }
+        ]
+      }
+    },
+    "docker": {
+      "name": "Docker Container Pool",
+      "description": "Docker-based process isolation with container orchestration",
+      "type": "container",
+      "runtime": "docker",
+      "capabilities": [
+        "process_isolation",
+        "resource_limits",
+        "health_monitoring",
+        "auto_scaling",
+        "load_balancing", 
+        "service_discovery",
+        "rolling_updates"
+      ],
+      "configuration": {
+        "entry_point": "pool/backends/docker.py",
+        "config_file": "pool/config/docker.json",
+        "base_image": "cgi-pool:latest",
+        "network": "cgi-pool-network",
+        "restart_policy": "unless-stopped"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "docker",
+            "version": "20.0+", 
+            "check_command": "docker --version"
+          }
+        ],
+        "packages": [
+          {
+            "name": "docker-py",
+            "install": "pip3 install docker",
+            "check_method": "python_import"
+          }
+        ]
+      }
+    },
+    "systemd": {
+      "name": "systemd Service Manager",
+      "description": "systemd-based service management with native Linux integration",
+      "type": "system_service",
+      "runtime": "systemd",
+      "capabilities": [
+        "process_lifecycle",
+        "service_management",
+        "auto_restart",
+        "resource_limits",
+        "logging_integration",
+        "dependency_management"
+      ],
+      "configuration": {
+        "entry_point": "pool/backends/systemd.py",
+        "config_file": "pool/config/systemd.json",
+        "service_template": "pool/templates/systemd.service.template",
+        "unit_dir": "/etc/systemd/system/"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "systemd",
+            "check_command": "systemctl --version",
+            "platforms": ["linux"]
+          }
+        ]
+      }
+    },
+    "kubernetes": {
+      "name": "Kubernetes Deployment",
+      "description": "Kubernetes-based container orchestration with advanced scaling",
+      "type": "orchestration",
+      "runtime": "kubernetes",
+      "capabilities": [
+        "horizontal_scaling",
+        "rolling_updates",
+        "service_discovery",
+        "health_monitoring",
+        "resource_management",
+        "load_balancing",
+        "config_management",
+        "secret_management"
+      ],
+      "configuration": {
+        "entry_point": "pool/backends/kubernetes.py",
+        "config_file": "pool/config/kubernetes.json",
+        "namespace": "cgi-pool",
+        "deployment_template": "pool/templates/deployment.yaml.template",
+        "service_template": "pool/templates/service.yaml.template"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "kubectl",
+            "check_command": "kubectl version --client"
+          }
+        ],
+        "packages": [
+          {
+            "name": "kubernetes",
+            "install": "pip3 install kubernetes",
+            "check_method": "python_import"
+          }
+        ]
+      }
+    },
+    "pm2": {
+      "name": "PM2 Process Manager",
+      "description": "PM2-based Node.js process management with clustering support",
+      "type": "process_manager",
+      "runtime": "nodejs",
+      "capabilities": [
+        "process_clustering",
+        "auto_restart",
+        "load_balancing", 
+        "monitoring",
+        "log_management",
+        "zero_downtime_reload"
+      ],
+      "configuration": {
+        "entry_point": "pool/backends/pm2.py",
+        "config_file": "pool/config/pm2.json",
+        "ecosystem_file": "pool/config/ecosystem.config.js"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "node",
+            "version": "14+",
+            "check_command": "node --version"
+          },
+          {
+            "name": "pm2",
+            "check_command": "pm2 --version",
+            "install": "npm install -g pm2"
+          }
+        ]
+      }
+    }
+  },
+  "selection_criteria": {
+    "development": ["python_builtin"],
+    "testing": ["python_builtin", "docker"],
+    "staging": ["docker", "systemd"],
+    "production": ["kubernetes", "systemd", "docker"],
+    "windows": ["python_builtin"],
+    "linux": ["systemd", "docker", "kubernetes", "python_builtin"],
+    "macos": ["python_builtin", "docker"]
+  },
+  "metadata": {
+    "created": "2025-09-06T05:00:00Z",
+    "schema_version": "1.0",
+    "author": "CGI Process Pool Modular System"
+  }
+}

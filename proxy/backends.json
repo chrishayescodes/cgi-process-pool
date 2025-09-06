@@ -1,0 +1,269 @@
+{
+  "version": "1.0", 
+  "description": "Proxy backend definitions for CGI Process Pool system",
+  "backends": {
+    "yarp": {
+      "name": "Microsoft YARP",
+      "description": ".NET-based reverse proxy with advanced routing and load balancing",
+      "type": "reverse_proxy",
+      "runtime": "dotnet",
+      "capabilities": [
+        "reverse_proxy",
+        "load_balancing",
+        "health_checks",
+        "request_transformation",
+        "admin_dashboard",
+        "metrics_collection",
+        "ssl_termination",
+        "rate_limiting",
+        "circuit_breaker"
+      ],
+      "configuration": {
+        "entry_point": "proxy/backends/yarp/Program.cs",
+        "config_file": "proxy/config/yarp.json",
+        "project_file": "proxy/backends/yarp/CGIProxy.csproj",
+        "default_port": 8080,
+        "admin_port": 8080,
+        "admin_path": "/admin"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "dotnet",
+            "version": "6.0+",
+            "check_command": "dotnet --version"
+          }
+        ],
+        "packages": [
+          {
+            "name": "Microsoft.Extensions.Hosting",
+            "type": "nuget"
+          },
+          {
+            "name": "Yarp.ReverseProxy", 
+            "type": "nuget"
+          }
+        ]
+      }
+    },
+    "nginx": {
+      "name": "nginx",
+      "description": "High-performance HTTP server and reverse proxy",
+      "type": "reverse_proxy",
+      "runtime": "nginx",
+      "capabilities": [
+        "reverse_proxy",
+        "load_balancing",
+        "ssl_termination",
+        "static_file_serving",
+        "gzip_compression",
+        "rate_limiting",
+        "access_control",
+        "upstream_health_checks"
+      ],
+      "configuration": {
+        "entry_point": "proxy/backends/nginx/manager.py",
+        "config_file": "proxy/config/nginx.json", 
+        "nginx_conf": "proxy/backends/nginx/nginx.conf.template",
+        "upstream_conf": "proxy/backends/nginx/upstream.conf.template",
+        "default_port": 8080,
+        "admin_port": 8081,
+        "admin_path": "/nginx_status"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "nginx",
+            "check_command": "nginx -v"
+          }
+        ]
+      }
+    },
+    "haproxy": {
+      "name": "HAProxy", 
+      "description": "Reliable, high-performance TCP/HTTP load balancer",
+      "type": "load_balancer",
+      "runtime": "haproxy",
+      "capabilities": [
+        "tcp_load_balancing",
+        "http_load_balancing", 
+        "health_checks",
+        "ssl_termination",
+        "session_persistence",
+        "statistics_page",
+        "circuit_breaker",
+        "rate_limiting"
+      ],
+      "configuration": {
+        "entry_point": "proxy/backends/haproxy/manager.py",
+        "config_file": "proxy/config/haproxy.json",
+        "haproxy_cfg": "proxy/backends/haproxy/haproxy.cfg.template",
+        "default_port": 8080,
+        "admin_port": 8404,
+        "admin_path": "/stats"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "haproxy",
+            "check_command": "haproxy -v"
+          }
+        ]
+      }
+    },
+    "envoy": {
+      "name": "Envoy Proxy",
+      "description": "Cloud-native high-performance edge/middle proxy",
+      "type": "service_mesh",
+      "runtime": "envoy",
+      "capabilities": [
+        "service_mesh",
+        "advanced_load_balancing",
+        "circuit_breaking",
+        "rate_limiting",
+        "observability",
+        "security_policies",
+        "grpc_support",
+        "http2_http3"
+      ],
+      "configuration": {
+        "entry_point": "proxy/backends/envoy/manager.py",
+        "config_file": "proxy/config/envoy.json",
+        "envoy_yaml": "proxy/backends/envoy/envoy.yaml.template",
+        "default_port": 8080,
+        "admin_port": 9901
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "envoy",
+            "check_command": "envoy --version"
+          }
+        ]
+      }
+    },
+    "traefik": {
+      "name": "Traefik",
+      "description": "Modern reverse proxy with automatic service discovery",
+      "type": "edge_router",
+      "runtime": "traefik",
+      "capabilities": [
+        "automatic_service_discovery",
+        "reverse_proxy",
+        "load_balancing",
+        "ssl_certificates",
+        "middleware_plugins",
+        "metrics_collection",
+        "web_ui_dashboard"
+      ],
+      "configuration": {
+        "entry_point": "proxy/backends/traefik/manager.py",
+        "config_file": "proxy/config/traefik.json",
+        "traefik_yml": "proxy/backends/traefik/traefik.yml.template",
+        "dynamic_conf": "proxy/backends/traefik/dynamic.yml.template",
+        "default_port": 8080,
+        "admin_port": 8082
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "traefik",
+            "check_command": "traefik version"
+          }
+        ]
+      }
+    },
+    "caddy": {
+      "name": "Caddy",
+      "description": "Fast, multi-platform web server with automatic HTTPS",
+      "type": "web_server",
+      "runtime": "caddy",
+      "capabilities": [
+        "automatic_https",
+        "reverse_proxy",
+        "load_balancing", 
+        "file_server",
+        "api_gateway",
+        "admin_api"
+      ],
+      "configuration": {
+        "entry_point": "proxy/backends/caddy/manager.py",
+        "config_file": "proxy/config/caddy.json",
+        "caddyfile": "proxy/backends/caddy/Caddyfile.template",
+        "default_port": 8080,
+        "admin_port": 2019
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "caddy",
+            "check_command": "caddy version"
+          }
+        ]
+      }
+    },
+    "python_builtin": {
+      "name": "Python Built-in Proxy",
+      "description": "Simple Python-based HTTP proxy for development and testing",
+      "type": "development_proxy",
+      "runtime": "python3",
+      "capabilities": [
+        "basic_reverse_proxy",
+        "round_robin_balancing",
+        "health_checks",
+        "request_logging",
+        "development_friendly"
+      ],
+      "configuration": {
+        "entry_point": "proxy/backends/python_builtin/proxy.py",
+        "config_file": "proxy/config/python_builtin.json",
+        "default_port": 8080
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "python3",
+            "version": "3.6+",
+            "check_command": "python3 --version"
+          }
+        ],
+        "packages": [
+          {
+            "name": "requests",
+            "install": "pip3 install requests",
+            "check_method": "python_import"
+          }
+        ]
+      }
+    }
+  },
+  "selection_criteria": {
+    "development": ["python_builtin", "yarp"],
+    "testing": ["nginx", "yarp", "traefik"],
+    "staging": ["nginx", "haproxy", "traefik"],
+    "production": ["nginx", "haproxy", "envoy", "traefik"],
+    "high_performance": ["nginx", "haproxy", "envoy"],
+    "cloud_native": ["envoy", "traefik", "yarp"],
+    "simple_setup": ["caddy", "traefik", "python_builtin"],
+    "enterprise": ["nginx", "haproxy", "envoy"],
+    "microservices": ["envoy", "traefik", "yarp"],
+    "windows": ["yarp", "python_builtin"],
+    "linux": ["nginx", "haproxy", "envoy", "traefik", "caddy"],
+    "macos": ["nginx", "traefik", "caddy", "python_builtin"]
+  },
+  "feature_matrix": {
+    "ssl_termination": ["nginx", "haproxy", "envoy", "traefik", "caddy"],
+    "auto_ssl": ["traefik", "caddy"],
+    "web_ui": ["traefik", "yarp"],
+    "api_management": ["envoy", "traefik", "yarp"],
+    "service_mesh": ["envoy"],
+    "http2_http3": ["nginx", "envoy", "traefik", "caddy"],
+    "grpc_support": ["nginx", "envoy", "traefik"],
+    "websocket_support": ["nginx", "haproxy", "envoy", "traefik", "caddy"]
+  },
+  "metadata": {
+    "created": "2025-09-06T05:15:00Z",
+    "schema_version": "1.0",
+    "author": "CGI Process Pool Modular System"
+  }
+}
