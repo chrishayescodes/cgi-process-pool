@@ -4,6 +4,8 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 
 **🎓 Educational Focus**: This project serves as a comprehensive learning platform for systems programming, web architecture, and distributed systems concepts. Perfect for understanding how modern web infrastructure works from the ground up!
 
+**💖 Support this Project**: If you find this educational resource helpful, consider supporting continued development and content creation on [Patreon](https://patreon.com/chrishayescodes).
+
 ## ✨ Features
 
 - **🔧 CGI Process Pool**: C-based HTTP servers with socket communication
@@ -395,3 +397,22 @@ Students and practitioners will gain hands-on experience with:
 - Implementing observability and monitoring in distributed systems
 
 This project bridges the gap between theoretical computer science concepts and real-world system implementation, making it perfect for educational environments and self-directed learning.
+
+## 💖 Support This Educational Project
+
+This comprehensive learning resource is developed and maintained as an open educational project. If you find it valuable for learning systems programming, web architecture, or distributed systems concepts, please consider supporting continued development:
+
+**[🎯 Support on Patreon](https://patreon.com/chrishayescodes)**
+
+Your support helps:
+- 📚 Create more educational content and tutorials
+- 🔧 Add new language integrations and examples  
+- 📖 Develop comprehensive learning materials
+- 🎯 Maintain and improve the codebase
+- 🌟 Keep the project free and open source for all learners
+
+**Other ways to support:**
+- ⭐ Star this repository on GitHub
+- 🔄 Share the project with other learners
+- 📝 Contribute improvements or documentation
+- 💬 Provide feedback and learning suggestions
