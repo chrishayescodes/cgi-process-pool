@@ -1,0 +1,46 @@
+# CGI Build Artifacts
+*.cgi
+*.o
+*.so
+*.a
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+/tmp/cgi_upstreams.conf
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# .NET build outputs (for proxy subdirectory)
+**/bin/
+**/obj/
+**/logs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Package managers
+node_modules/
+*.egg-info/
+
+# Local development
+.env
+.env.local
