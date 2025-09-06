@@ -14,33 +14,35 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 - **🔍 Dynamic Discovery**: Automatic sample detection and configuration from JSON manifest
 - **🚀 Automated Service Addition**: One-command CGI app integration (C, Python & C#)
 - **🏥 Health Monitoring**: Automatic failover and process management
+- **🛠️ Hardened Process Management**: Production-ready lifecycle management with graceful shutdown
+- **🧹 Orphan Process Cleanup**: Automatic detection and cleanup of stuck processes
+- **📋 Unified Operations**: Single-command system startup, monitoring, and shutdown
 
 ## 🚀 Quick Start
 
-### 1. Check Dependencies
+### Simple Start (Recommended)
 ```bash
+# Start the complete system (builds, starts pool + proxy, monitors)
+make start
+
+# Check status
+make status
+
+# Stop when done
+make stop
+```
+
+### Manual Steps (If Needed)
+```bash
+# 1. Check dependencies
 make check-deps
-```
 
-### 2. Discover and Build Services
-```bash
-# Discover available samples
-make discover
+# 2. Discover and build services
+make discover && make all
 
-# Get details about a specific sample
-make sample-info SAMPLE=search
-
-# Build all discovered services
-make all
-```
-
-### 3. Run the System
-```bash
-# Terminal 1: Start process pool (auto-configured from manifest.json)
-make run-pool
-
-# Terminal 2: Start YARP proxy with admin dashboard  
-make run-yarp
+# 3. Start individual components
+make run-pool     # Terminal 1
+make run-yarp     # Terminal 2
 ```
 
 ### 4. Access Your System
@@ -163,30 +165,47 @@ make smoke-test
 
 ```
 cgi-process-pool/
-├── 📦 Sample Applications
-│   ├── .samples/                # Sample registry and applications
+├── 📦 Sample Applications & Discovery
+│   ├── discovery/               # NEW: Discovery system and samples
 │   │   ├── manifest.json        # Editable sample manifest
-│   │   ├── c/                   # C language samples
-│   │   ├── python/              # Python language samples
-│   │   ├── csharp/              # C# script samples  
-│   │   └── templates/           # Service templates
+│   │   ├── discovery.py         # Discovery engine
+│   │   └── samples/             # Sample applications by language
+│   │       ├── c/               # C language samples
+│   │       ├── python/          # Python language samples
+│   │       ├── csharp/          # C# script samples  
+│   │       └── templates/       # Service templates
+├── 🛠️ Operations Management (NEW)
+│   ├── ops/                     # Process lifecycle management
+│   │   ├── process_manager.py   # Core process manager
+│   │   ├── startup.sh          # Unified startup script
+│   │   ├── shutdown.sh         # Graceful shutdown script
+│   │   ├── process_config.json # Process configuration
+│   │   └── README.md           # Operations documentation
+├── 🌍 Modular Language System (NEW)  
+│   ├── languages/              # Language plugin system
+│   │   ├── definitions.json    # Language definitions
+│   │   ├── manager.py          # Language manager
+│   │   ├── add_service.sh      # Universal service generator
+│   │   └── check_dependencies.sh # Dependency checker
 ├── 🔧 Core Services
-│   └── pool_manager.py          # Process lifecycle manager
-├── 🌐 YARP Proxy
-│   └── proxy/CGIProxy/          # Reverse proxy + admin UI
+│   └── pool/                   # Process pool management
+│       └── manager.py          # Pool lifecycle manager  
+├── 🌐 Proxy Systems
+│   ├── proxy/                  # Modular proxy backends
+│   │   ├── backends.json       # Proxy backend definitions
+│   │   └── CGIProxy/           # YARP reverse proxy + admin UI
+├── 🧪 Testing & Quality Assurance
+│   ├── testing/               # Testing infrastructure  
+│   │   ├── stress_test.sh     # Comprehensive load testing
+│   │   └── smoketest.sh       # System health verification
 ├── 🏗️ Build Output
-│   └── build/                   # Compiled CGI executables (gitignored)
-├── 🤖 Automation
-│   ├── add_cgi_app.sh          # C service automation
-│   ├── add_python_cgi_app.sh   # Python service automation
-│   ├── add_csharp_cgi_app.sh   # C# script service automation
-│   ├── stress_test.sh          # Comprehensive load testing
-│   └── check_dependencies.sh   # System requirements checker
+│   └── build/                  # Compiled CGI executables (gitignored)
 ├── 📚 Documentation  
-│   └── .docs/                   # Comprehensive guides
+│   └── .docs/                  # Comprehensive guides and architecture
 └── ⚙️ Build System
-    ├── Makefile                 # Build automation with organized output
-    └── demo.sh                  # Legacy demo
+    ├── Makefile                # Enhanced build automation
+    ├── Makefile.rules          # Auto-generated build rules
+    └── demo.sh                 # Legacy demo
 ```
 
 ## 📚 Documentation
@@ -194,10 +213,12 @@ cgi-process-pool/
 | Document | Description |
 |----------|-------------|
 | **[Architecture Guide](.docs/ARCHITECTURE.md)** | System architecture and components |
+| **[Operations Management](ops/README.md)** | **NEW**: Process lifecycle management system |
 | **[Modular Languages](.docs/MODULAR_LANGUAGES.md)** | **NEW**: Extensible language plugin system |
-| **[Sample Applications](manifest.json)** | Sample registry with all available services |
-| **[Language Definitions](languages.json)** | **NEW**: Supported programming languages |
-| **[Adding CGI Apps](.docs/ADDING_CGI_APPS.md)** | Automated C service integration guide |
+| **[Sample Applications](discovery/manifest.json)** | Sample registry with all available services |
+| **[Language Definitions](languages/definitions.json)** | **NEW**: Supported programming languages |
+| **[Proxy Backends](proxy/backends.json)** | **NEW**: Modular proxy system definitions |
+| **[Adding CGI Apps](.docs/ADDING_CGI_APPS.md)** | Automated service integration guide |
 | **[Manual Pool Setup](.docs/ADDING_NEW_POOLS.md)** | Step-by-step manual process |
 | **[Original POC](.docs/cgi_pool_poc.md)** | Initial proof of concept |
 
@@ -217,29 +238,55 @@ Client → YARP Proxy (8080) → CGI Pool (8000-8002) → Response
 
 ## 🔧 Available Commands
 
+### System Lifecycle (Recommended)
+```bash
+# Complete system management
+make start           # Start complete system (pool + proxy + monitoring)
+make stop            # Gracefully stop complete system
+make restart         # Restart complete system
+make status          # Show status of all processes
+make cleanup         # Clean up orphaned processes
+
+# Background operation (for CI/testing)
+make start-bg        # Start system in background (no monitoring)
+make stop-force      # Force stop system (kills stuck processes)
+```
+
+### Development & Testing
 ```bash
 # Sample Management
-make samples         # List available samples
+make discover        # List all available samples from manifest
+make sample-info SAMPLE=search  # Get details about specific sample
+make samples         # List available samples (legacy)
 make samples-info    # Show detailed sample manifest
 
 # Build and test
 make all             # Build all CGI services to build/ directory
 make test            # Run basic functionality tests  
+make smoke-test      # Run smoke tests on all endpoints
 make clean           # Clean build/ directory and artifacts
-./stress_test.sh     # Run comprehensive stress test
+./testing/stress_test.sh  # Run comprehensive stress test
 
-# Run system
-make run-pool        # Start CGI process pool
-make run-yarp        # Start YARP proxy with admin dashboard
+# Legacy individual component startup
+make run-pool        # Start CGI process pool only
+make run-yarp        # Start YARP proxy with admin dashboard only
 make run-demo        # Legacy nginx demo
+```
 
-# Add services  
-./add_cgi_app.sh <name> <port> [instances]           # Add C service
-./add_python_cgi_app.sh <name> <port> [instances]   # Add Python service
-./add_csharp_cgi_app.sh <name> <port> [instances]   # Add C# script service
+### Service Addition
+```bash
+# Add services with automation
+./languages/add_service.sh <name> <language> <port> [instances]  # Universal service generator
+./add_cgi_app.sh <name> <port> [instances]           # Add C service (legacy)
+./add_python_cgi_app.sh <name> <port> [instances]   # Add Python service (legacy)
+./add_csharp_cgi_app.sh <name> <port> [instances]   # Add C# script service (legacy)
+```
 
-# Check system
-make check-deps      # Verify dependencies
+### System Maintenance
+```bash
+# Dependencies and health
+make check-deps      # Verify all language dependencies
+make check-deps-fix  # Auto-install missing dependencies
 make help           # Show all available commands
 ```
 
@@ -261,6 +308,12 @@ The system provides comprehensive observability:
 - Load balancing and health checks  
 - Admin dashboard integration
 
+### Hardened Process Management
+- Graceful startup with dependency ordering
+- Health monitoring with automatic restart
+- Orphaned process detection and cleanup
+- Signal handling and graceful shutdown
+
 ### Production-Ready Monitoring
 - Structured logging with Serilog
 - Request correlation IDs
@@ -271,6 +324,7 @@ The system provides comprehensive observability:
 - .NET 8 based YARP proxy
 - Multithreaded C services
 - Python process management
+- Modular language plugin system
 - Clean separation of concerns
 
 ## 🏛️ Legacy Support

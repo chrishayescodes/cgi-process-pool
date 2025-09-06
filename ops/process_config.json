@@ -1,0 +1,35 @@
+{
+  "processes": {
+    "pool_manager": {
+      "command": ["python3", "pool/manager.py"],
+      "cwd": ".",
+      "env": {},
+      "restart_policy": "always",
+      "startup_delay": 5,
+      "health_check": {
+        "type": "port",
+        "target": "8000",
+        "timeout": 10
+      }
+    },
+    "yarp_proxy": {
+      "command": ["dotnet", "run", "--urls=http://0.0.0.0:8080"],
+      "cwd": "proxy/CGIProxy",
+      "env": {},
+      "restart_policy": "always", 
+      "startup_delay": 3,
+      "depends_on": ["pool_manager"],
+      "health_check": {
+        "type": "http",
+        "url": "http://localhost:8080/admin",
+        "timeout": 10
+      }
+    }
+  },
+  "global_settings": {
+    "startup_timeout": 30,
+    "shutdown_timeout": 15,
+    "health_check_interval": 30,
+    "log_directory": "logs"
+  }
+}

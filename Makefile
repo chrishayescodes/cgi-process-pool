@@ -8,7 +8,7 @@ BUILD_DIR = build
 # Dynamically discover targets from manifest.json
 TARGETS := $(shell ./discovery/discovery.py targets 2>/dev/null || echo "build/search.cgi build/auth.cgi")
 
-.PHONY: all clean test run-pool run-demo run-yarp check-deps samples discover
+.PHONY: all clean test run-pool run-demo run-yarp check-deps samples discover start stop restart status cleanup
 
 all: $(BUILD_DIR) $(TARGETS)
 
@@ -150,8 +150,54 @@ check-lang-deps:
 		./languages/check_dependencies.sh --language $(LANG); \
 	fi
 
+# System Lifecycle Management Commands
+start: all
+	@echo "🚀 Starting CGI Process Pool system..."
+	@chmod +x ops/startup.sh ops/shutdown.sh ops/process_manager.py
+	@./ops/startup.sh --build --cleanup
+
+stop:
+	@echo "🛑 Stopping CGI Process Pool system..."
+	@chmod +x ops/shutdown.sh
+	@./ops/shutdown.sh
+
+restart: stop
+	@sleep 2
+	@$(MAKE) start
+
+status:
+	@echo "📊 Checking system status..."
+	@chmod +x ops/process_manager.py
+	@python3 ops/process_manager.py status || echo "⚠️  System not running or process manager unavailable"
+
+cleanup:
+	@echo "🧹 Cleaning up orphaned processes..."
+	@chmod +x ops/process_manager.py
+	@python3 ops/process_manager.py cleanup || true
+
+# System startup in background (for CI/testing)
+start-bg: all
+	@echo "🚀 Starting CGI Process Pool system in background..."
+	@chmod +x ops/startup.sh
+	@./ops/startup.sh --build --cleanup --no-monitor
+
+# Force shutdown (for stuck processes)
+stop-force:
+	@echo "🛑 Force stopping CGI Process Pool system..."
+	@chmod +x ops/shutdown.sh
+	@./ops/shutdown.sh --force --cleanup
+
 help:
 	@echo "CGI Process Pool - Dynamic Makefile"
+	@echo ""
+	@echo "System Lifecycle Commands:"
+	@echo "  make start         - Start the complete CGI system (pool + proxy)"
+	@echo "  make stop          - Stop the complete CGI system gracefully"
+	@echo "  make restart       - Restart the complete system"
+	@echo "  make status        - Show status of all system processes"
+	@echo "  make cleanup       - Clean up orphaned processes"
+	@echo "  make start-bg      - Start system in background (no monitoring)"
+	@echo "  make stop-force    - Force stop system (for stuck processes)"
 	@echo ""
 	@echo "Discovery Commands:"
 	@echo "  make discover       - List all discovered samples"
@@ -169,9 +215,9 @@ help:
 	@echo "  make smoke-test    - Run smoke tests on all endpoints"
 	@echo "  make smoke-test-verbose - Run smoke tests with verbose output"
 	@echo ""
-	@echo "Runtime Commands:"
-	@echo "  make run-pool      - Start the CGI pool manager"
-	@echo "  make run-yarp      - Start YARP proxy with admin dashboard"
+	@echo "Legacy Runtime Commands (use lifecycle commands instead):"
+	@echo "  make run-pool      - Start the CGI pool manager only"
+	@echo "  make run-yarp      - Start YARP proxy only"
 	@echo ""
 	@echo "Service Addition Commands:"
 	@echo "  ./add_cgi_app.sh <name> <port> [instances]        - Add C service"
@@ -187,6 +233,11 @@ help:
 	@echo ""
 	@echo "Other Commands:"
 	@echo "  make help              - Show this help message"
+	@echo ""
+	@echo "Recommended workflow:"
+	@echo "  1. make start          # Start the complete system"
+	@echo "  2. make smoke-test     # Verify everything is working"
+	@echo "  3. make stop           # Stop when done"
 	@echo ""
 	@echo "The build system automatically discovers samples from manifest.json"
 	@echo "and generates appropriate build rules. Edit manifest.json to add new services."
