@@ -6,7 +6,7 @@ CFLAGS = -Wall -O2 -pthread
 BUILD_DIR = build
 
 # Dynamically discover targets from manifest.json
-TARGETS := $(shell ./discovery.py targets 2>/dev/null || echo "build/search.cgi build/auth.cgi")
+TARGETS := $(shell ./discovery/discovery.py targets 2>/dev/null || echo "build/search.cgi build/auth.cgi")
 
 .PHONY: all clean test run-pool run-demo run-yarp check-deps samples discover
 
@@ -19,10 +19,10 @@ $(BUILD_DIR):
 -include Makefile.rules
 
 # Generate build rules from manifest.json
-Makefile.rules: manifest.json discovery.py
+Makefile.rules: discovery/manifest.json discovery/discovery.py
 	@echo "# Auto-generated build rules from manifest.json" > $@
 	@echo "# Generated at: $$(date)" >> $@
-	@./discovery.py rules >> $@ 2>/dev/null || echo "# Failed to generate rules" >> $@
+	@./discovery/discovery.py rules >> $@ 2>/dev/null || echo "# Failed to generate rules" >> $@
 	@echo "✓ Generated build rules from manifest.json"
 
 clean:
@@ -34,33 +34,33 @@ clean:
 # Discovery commands
 discover:
 	@echo "🔍 Discovering applications from manifest.json..."
-	@./discovery.py list
+	@./discovery/discovery.py list
 
 discover-c:
 	@echo "🔍 C language applications:"
-	@./discovery.py list --language c
+	@./discovery/discovery.py list --language c
 
 discover-python:
 	@echo "🔍 Python language applications:"
-	@./discovery.py list --language python
+	@./discovery/discovery.py list --language python
 
 discover-csharp:
 	@echo "🔍 C# script applications:"
-	@./discovery.py list --language csharp
+	@./discovery/discovery.py list --language csharp
 
 sample-info:
 	@if [ -z "$(SAMPLE)" ]; then \
 		echo "Usage: make sample-info SAMPLE=<name>"; \
 		echo "Available applications:"; \
-		./discovery.py list --format text; \
+		./discovery/discovery.py list --format text; \
 	else \
-		./discovery.py info --name $(SAMPLE); \
+		./discovery/discovery.py info --name $(SAMPLE); \
 	fi
 
 # Generate pool configuration
 pool-config:
 	@echo "📋 Pool Manager Configuration:"
-	@./discovery.py pool-config
+	@./discovery/discovery.py pool-config
 
 test: all
 	@echo "Testing discovered samples..."
@@ -81,9 +81,17 @@ test: all
 		fi; \
 	done
 
+smoke-test:
+	@echo "🔍 Running smoke tests on all endpoints..."
+	@./testing/smoketest.sh
+
+smoke-test-verbose:
+	@echo "🔍 Running smoke tests with verbose output..."
+	@./testing/smoketest.sh --verbose
+
 samples:
 	@echo "📋 Available applications in manifest:"
-	@./discovery.py list
+	@./discovery/discovery.py list
 
 samples-info:
 	@echo "📋 Application Manifest Information:"
@@ -108,7 +116,7 @@ add-sample:
 	@echo '  }'
 
 run-pool: all
-	python3 pool_manager.py
+	python3 pool/manager.py
 
 run-yarp: all
 	@echo "Starting YARP proxy with integrated admin dashboard on port 8080..."
@@ -140,6 +148,8 @@ help:
 	@echo "  make all           - Build all discovered CGI executables"
 	@echo "  make clean         - Remove built files and generated rules"
 	@echo "  make test          - Run tests on discovered samples"
+	@echo "  make smoke-test    - Run smoke tests on all endpoints"
+	@echo "  make smoke-test-verbose - Run smoke tests with verbose output"
 	@echo ""
 	@echo "Runtime Commands:"
 	@echo "  make run-pool      - Start the CGI pool manager"

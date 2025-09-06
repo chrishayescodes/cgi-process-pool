@@ -1,0 +1,198 @@
+{
+  "version": "1.0",
+  "description": "Language definitions for CGI Process Pool automation",
+  "languages": {
+    "c": {
+      "name": "C",
+      "description": "Native C CGI services with high performance",
+      "file_extension": ".c",
+      "executable_extension": ".cgi",
+      "build_required": true,
+      "runtime": {
+        "command": "./{executable}",
+        "build_command": "gcc -Wall -O2 -pthread -o {executable} {source_file}",
+        "health_check": "/?q=health"
+      },
+      "template": {
+        "include_headers": [
+          "#include <stdio.h>",
+          "#include <stdlib.h>",
+          "#include <string.h>",
+          "#include <unistd.h>",
+          "#include <sys/socket.h>",
+          "#include <netinet/in.h>",
+          "#include <pthread.h>",
+          "#include <time.h>",
+          "#include <signal.h>"
+        ],
+        "main_function": "int main(int argc, char *argv[])",
+        "port_parsing": "int port = atoi(argv[1]);",
+        "server_setup": "socket + bind + listen pattern",
+        "response_format": "HTTP/1.1 200 OK with JSON"
+      },
+      "monitoring": {
+        "process_pattern": "\\.cgi",
+        "name_extraction": "cmdLine.Contains(\"{service_name}.cgi\") ? \"{service_name}\" :"
+      }
+    },
+    "python": {
+      "name": "Python",
+      "description": "Python CGI services with rich libraries and rapid development",
+      "file_extension": ".py",
+      "executable_extension": ".py",
+      "build_required": false,
+      "runtime": {
+        "command": "python3 ./{executable}",
+        "health_check": "/?status=health"
+      },
+      "template": {
+        "shebang": "#!/usr/bin/env python3",
+        "imports": [
+          "import sys",
+          "import json",
+          "import time",
+          "import os",
+          "import threading",
+          "import signal",
+          "from http.server import HTTPServer, BaseHTTPRequestHandler",
+          "from urllib.parse import parse_qs, urlparse"
+        ],
+        "main_function": "def main():",
+        "port_parsing": "port = int(sys.argv[1])",
+        "server_setup": "HTTPServer class with BaseHTTPRequestHandler",
+        "response_format": "JSON with http.server"
+      },
+      "monitoring": {
+        "process_pattern": "python.*\\.py",
+        "name_extraction": "cmdLine.Contains(\"{service_name}.py\") ? \"{service_name}\" :"
+      }
+    },
+    "csharp": {
+      "name": "C# Script",
+      "description": "C# scripts with .NET ecosystem and async capabilities",
+      "file_extension": ".csx",
+      "executable_extension": ".csx",
+      "build_required": false,
+      "runtime": {
+        "command": "dotnet-script ./{executable}",
+        "health_check": "/?service=health",
+        "requirements": [
+          "dotnet tool install -g dotnet-script"
+        ]
+      },
+      "template": {
+        "shebang": "#!/usr/bin/env dotnet-script",
+        "references": [
+          "#r \"nuget: System.Text.Json, 8.0.0\""
+        ],
+        "using_statements": [
+          "using System;",
+          "using System.IO;",
+          "using System.Net;",
+          "using System.Net.Sockets;",
+          "using System.Text;",
+          "using System.Text.Json;",
+          "using System.Threading.Tasks;"
+        ],
+        "port_parsing": "int.TryParse(Args[0], out int port)",
+        "server_setup": "TcpListener with async/await",
+        "response_format": "JSON with System.Text.Json"
+      },
+      "monitoring": {
+        "process_pattern": "dotnet-script.*\\.csx",
+        "name_extraction": "cmdLine.Contains(\"{service_name}.csx\") ? \"{service_name}\" :"
+      }
+    },
+    "javascript": {
+      "name": "JavaScript (Node.js)",
+      "description": "Node.js JavaScript services with npm ecosystem and async capabilities",
+      "file_extension": ".js",
+      "executable_extension": ".js",
+      "build_required": false,
+      "runtime": {
+        "command": "node ./{executable}",
+        "health_check": "/?health=true",
+        "requirements": [
+          "Node.js 18+ and npm"
+        ]
+      },
+      "template": {
+        "shebang": "#!/usr/bin/env node",
+        "imports": [
+          "const http = require('http');",
+          "const url = require('url');",
+          "const querystring = require('querystring');"
+        ],
+        "port_parsing": "const port = parseInt(process.argv[2]);",
+        "server_setup": "http.createServer() with request/response handling",
+        "response_format": "JSON with native JSON.stringify"
+      },
+      "monitoring": {
+        "process_pattern": "node.*\\.js",
+        "name_extraction": "cmdLine.Contains(\"{service_name}.js\") ? \"{service_name}\" :"
+      }
+    },
+    "rust": {
+      "name": "Rust",
+      "description": "High-performance Rust services with memory safety and speed",
+      "file_extension": ".rs",
+      "executable_extension": "",
+      "build_required": true,
+      "runtime": {
+        "command": "./{executable}",
+        "build_command": "rustc --edition 2021 -O -o {executable} {source_file}",
+        "health_check": "/?health=check",
+        "requirements": [
+          "Rust compiler (rustc)"
+        ]
+      },
+      "template": {
+        "imports": [
+          "use std::io::prelude::*;",
+          "use std::net::{TcpListener, TcpStream};",
+          "use std::thread;",
+          "use std::env;"
+        ],
+        "main_function": "fn main()",
+        "port_parsing": "let port: u16 = env::args().nth(1).unwrap().parse().unwrap();",
+        "server_setup": "TcpListener::bind() with thread spawning",
+        "response_format": "HTTP response with JSON string"
+      },
+      "monitoring": {
+        "process_pattern": "[^/]*$",
+        "name_extraction": "cmdLine.Contains(\"{service_name}\") ? \"{service_name}\" :"
+      }
+    }
+  },
+  "templates": {
+    "automation_script": {
+      "description": "Template for generating language-specific automation scripts",
+      "placeholders": {
+        "APP_NAME": "Name of the service being created",
+        "START_PORT": "Starting port number",
+        "INSTANCE_COUNT": "Number of service instances",
+        "LANGUAGE_NAME": "Display name of the language",
+        "FILE_EXTENSION": "File extension for source files",
+        "RUNTIME_COMMAND": "Command to execute the service",
+        "HEALTH_CHECK": "Health check endpoint pattern"
+      }
+    },
+    "service_template": {
+      "description": "Template for generating language-specific service code",
+      "common_features": [
+        "HTTP request handling",
+        "Query parameter parsing",
+        "JSON response generation",
+        "Health check endpoint",
+        "Process identification",
+        "Signal handling",
+        "Error handling"
+      ]
+    }
+  },
+  "metadata": {
+    "created": "2025-09-06T04:00:00Z",
+    "schema_version": "1.0",
+    "author": "CGI Process Pool Generator"
+  }
+}

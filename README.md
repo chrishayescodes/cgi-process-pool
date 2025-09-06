@@ -142,10 +142,13 @@ done
 ### Stress Testing
 ```bash
 # Run comprehensive stress test
-./stress_test.sh
+./testing/stress_test.sh
+
+# Run smoke tests for startup sanity check
+make smoke-test
 
 # Custom stress test parameters
-./stress_test.sh -c 100 -t 500 -d 60  # 100 concurrent, 500 total, 60s duration
+./testing/stress_test.sh -c 100 -t 500 -d 60  # 100 concurrent, 500 total, 60s duration
 ```
 
 **Stress Test Features:**
@@ -191,9 +194,10 @@ cgi-process-pool/
 | Document | Description |
 |----------|-------------|
 | **[Architecture Guide](.docs/ARCHITECTURE.md)** | System architecture and components |
-| **[Sample Applications](.samples/README.md)** | Complete sample registry and usage guide |
+| **[Modular Languages](.docs/MODULAR_LANGUAGES.md)** | **NEW**: Extensible language plugin system |
+| **[Sample Applications](manifest.json)** | Sample registry with all available services |
+| **[Language Definitions](languages.json)** | **NEW**: Supported programming languages |
 | **[Adding CGI Apps](.docs/ADDING_CGI_APPS.md)** | Automated C service integration guide |
-| **[Python CGI Integration](.docs/PYTHON_CGI_INTEGRATION.md)** | Complete Python service integration guide |
 | **[Manual Pool Setup](.docs/ADDING_NEW_POOLS.md)** | Step-by-step manual process |
 | **[Original POC](.docs/cgi_pool_poc.md)** | Initial proof of concept |
 
