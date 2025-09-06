@@ -1,48 +1,54 @@
 CC = gcc
 CFLAGS = -Wall -O2 -pthread
-TARGETS = search.cgi auth.cgi
+BUILD_DIR = build
+TARGETS = $(BUILD_DIR)/search.cgi $(BUILD_DIR)/auth.cgi
 
 .PHONY: all clean test run-pool run-demo run-yarp check-deps samples
 
-all: samples $(TARGETS)
+all: $(BUILD_DIR) $(TARGETS)
 
-search.cgi: .samples/c/search.c
-	$(CC) $(CFLAGS) -o $@ $<
-	@echo "✓ Built search.cgi from samples"
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-auth.cgi: .samples/c/auth.c
+$(BUILD_DIR)/search.cgi: .samples/c/search.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $<
-	@echo "✓ Built auth.cgi from samples"
+	@echo "✓ Built search.cgi in build/ directory"
+
+$(BUILD_DIR)/auth.cgi: .samples/c/auth.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -o $@ $<
+	@echo "✓ Built auth.cgi in build/ directory"
 
 clean:
-	rm -f $(TARGETS)
+	rm -rf $(BUILD_DIR)
 	rm -f /tmp/cgi_upstreams.conf
 	@echo "✓ Cleaned build artifacts"
 
 test: all
 	@echo "Testing search.cgi..."
-	@./search.cgi 9000 &
+	@./$(BUILD_DIR)/search.cgi 9000 &
 	@PID=$$!; \
 	sleep 1; \
 	curl -s "http://localhost:9000?q=test" | grep -q "results" && echo "✓ search.cgi test passed" || echo "✗ search.cgi test failed"; \
 	kill $$PID 2>/dev/null || true
 	
 	@echo "Testing auth.cgi..."
-	@./auth.cgi 9001 &
+	@./$(BUILD_DIR)/auth.cgi 9001 &
 	@PID=$$!; \
 	sleep 1; \
 	curl -s "http://localhost:9001?user=test" | grep -q "token" && echo "✓ auth.cgi test passed" || echo "✗ auth.cgi test failed"; \
 	kill $$PID 2>/dev/null || true
 
 samples:
-	@echo "📋 Available samples:"
-	@python3 sample_manager.py list
+	@echo "📋 Available samples in .samples/ directory:"
+	@echo "  - C samples: .samples/c/"
+	@echo "  - Python samples: .samples/python/"
+	@echo "  - Manifest: .samples/samples.json"
 	@echo ""
-	@echo "ℹ️  Use 'make samples-info' for detailed information"
-	@echo "ℹ️  Use './sample_manager.py info <sample>' for specific details"
+	@echo "ℹ️  Check .samples/samples.json for detailed information"
 
 samples-info:
-	@python3 sample_manager.py
+	@echo "📋 Sample Information:"
+	@cat .samples/samples.json | python3 -m json.tool
 
 run-pool: all
 	python3 pool_manager.py

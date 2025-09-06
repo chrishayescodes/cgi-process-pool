@@ -196,15 +196,15 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    if os.path.exists('./search.cgi'):
-        manager.add_pool('search', './search.cgi', min_processes=2, max_processes=5)
+    if os.path.exists('./build/search.cgi'):
+        manager.add_pool('search', './build/search.cgi', min_processes=2, max_processes=5)
     else:
-        print("⚠️  search.cgi not found, skipping")
+        print("⚠️  build/search.cgi not found, skipping")
     
-    if os.path.exists('./auth.cgi'):
-        manager.add_pool('auth', './auth.cgi', min_processes=1, max_processes=3)
+    if os.path.exists('./build/auth.cgi'):
+        manager.add_pool('auth', './build/auth.cgi', min_processes=1, max_processes=3)
     else:
-        print("⚠️  auth.cgi not found, skipping")
+        print("⚠️  build/auth.cgi not found, skipping")
     
     if not manager.pools:
         print("❌ No CGI executables found. Please build them first.")

@@ -43,6 +43,32 @@
         "JSON response format",
         "Single instance design"
       ]
+    },
+    "python_cgi": {
+      "name": "Python CGI Service",
+      "description": "Sample Python CGI HTTP server with GET/POST support and comprehensive JSON responses",
+      "language": "python",
+      "type": "core",
+      "path": "python/sample_python_cgi.py",
+      "executable": "sample_python_cgi.py",
+      "default_ports": [8003],
+      "health_check": "/?service=health",
+      "api_endpoint": "/api/python",
+      "examples": [
+        "curl \"http://localhost:8080/api/python?service=demo&data=test\"",
+        "curl \"http://localhost:8080/api/python?service=health\"",
+        "curl -X POST -H \"Content-Type: application/json\" -d '{\"test\":\"data\"}' \"http://localhost:8080/api/python\""
+      ],
+      "features": [
+        "HTTP GET/POST request handling",
+        "Query parameter parsing",
+        "JSON request/response processing",
+        "Process identification",
+        "Threading support",
+        "Signal handling",
+        "Python version information",
+        "CORS headers"
+      ]
     }
   },
   "templates": {
@@ -56,6 +82,21 @@
         "JSON response generation", 
         "Signal handling",
         "Process identification",
+        "Health check support"
+      ]
+    },
+    "python_service": {
+      "name": "Python Service Template",
+      "description": "Template for creating new Python-based CGI services",
+      "language": "python",
+      "path": "templates/python_service_template.py",
+      "features": [
+        "HTTP server framework",
+        "GET/POST request handling",
+        "JSON request/response processing",
+        "Signal handling",
+        "Process identification",
+        "Threading support",
         "Health check support"
       ]
     }
