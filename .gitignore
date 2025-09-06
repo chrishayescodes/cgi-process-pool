@@ -48,3 +48,4 @@ node_modules/
 
 # Generated build files
 Makefile.rules
+proxy/CGIProxy/appsettings.json

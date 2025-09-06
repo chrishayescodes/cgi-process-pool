@@ -95,6 +95,37 @@
         "NuGet package references",
         "CORS headers"
       ]
+    },
+    "csharp_abstraction": {
+      "name": "C# CGI Abstraction Service",
+      "description": "Advanced C# CGI service using transport-agnostic abstraction layer with multiple endpoints",
+      "language": "csharp",
+      "type": "core",
+      "path": "languages/csharp/examples/hello-service.csx",
+      "executable": "hello-service.csx",
+      "default_ports": [8005],
+      "health_check": "/health",
+      "api_endpoint": "/",
+      "examples": [
+        "curl \"http://localhost:8080/\"",
+        "curl \"http://localhost:8080/hello?name=World\"",
+        "curl \"http://localhost:8080/health\"",
+        "curl -X POST -H \"Content-Type: application/json\" -d '{\"text\":\"Hello\"}' \"http://localhost:8080/messages\"",
+        "curl \"http://localhost:8080/messages\"",
+        "curl \"http://localhost:8080/echo\""
+      ],
+      "features": [
+        "Transport abstraction (socket/stdio modes)",
+        "Request/Response model abstraction",
+        "Built-in helper methods (Ok, NotFound, Json, Html)",
+        "Multiple endpoint routing",
+        "GET/POST/PUT/DELETE method handling",
+        "In-memory message storage",
+        "HTML and JSON response formats",
+        "Query parameter parsing",
+        "Request echo endpoint for debugging",
+        "Clean handler-based architecture"
+      ]
     }
   },
   "templates": {
@@ -141,6 +172,23 @@
         "NuGet package support",
         "Health check support"
       ]
+    },
+    "csharp_abstraction_template": {
+      "name": "C# CGI Abstraction Template",
+      "description": "Template for creating new C# services using the CGI abstraction layer",
+      "language": "csharp",
+      "path": "languages/csharp/templates/service.csx.template",
+      "features": [
+        "Transport-agnostic design (socket/stdio)",
+        "Handler-based architecture",
+        "Built-in HTTP helper methods",
+        "RESTful endpoint structure",
+        "GET/POST/PUT/DELETE method routing",
+        "JSON serialization/deserialization",
+        "Error handling patterns",
+        "Query parameter processing",
+        "Response status helpers"
+      ]
     }
   },
   "categories": {
@@ -155,7 +203,7 @@
   },
   "metadata": {
     "created": "2025-09-06T02:44:00Z",
-    "updated": "2025-09-06T02:52:00Z",
+    "updated": "2025-09-06T22:24:00Z",
     "schema_version": "1.0",
     "compatible_versions": ["1.0.0+"]
   }

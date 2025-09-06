@@ -29,6 +29,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f /tmp/cgi_upstreams.conf
 	rm -f Makefile.rules
+	rm -f proxy/CGIProxy/appsettings.json
 	@echo "✓ Cleaned build artifacts"
 
 # Discovery commands
@@ -118,7 +119,12 @@ add-sample:
 run-pool: all
 	python3 pool/manager.py
 
-run-yarp: all
+generate-proxy-config: discovery/manifest.json
+	@echo "🔧 Generating YARP proxy configuration from manifest..."
+	python3 scripts/generate-yarp-config.py discovery/manifest.json proxy/CGIProxy/appsettings.json
+	@echo "✅ YARP configuration updated"
+
+run-yarp: generate-proxy-config all
 	@echo "Starting YARP proxy with integrated admin dashboard on port 8080..."
 	@echo "Ensure CGI pool is running first with 'make run-pool'"
 	@echo "Admin dashboard will be available at http://localhost:8080/admin"

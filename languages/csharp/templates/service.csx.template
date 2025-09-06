@@ -1,0 +1,92 @@
+#load "../cgi.csx"
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+class {{ServiceName}}Service : CgiHandler
+{
+    public override async Task<CgiResponse> HandleAsync(CgiRequest request)
+    {
+        return request.Method switch
+        {
+            "GET" => HandleGet(request),
+            "POST" => HandlePost(request),
+            "PUT" => HandlePut(request),
+            "DELETE" => HandleDelete(request),
+            _ => NotAllowed()
+        };
+    }
+    
+    private CgiResponse HandleGet(CgiRequest request)
+    {
+        // TODO: Implement GET logic
+        var id = request.QueryParams.GetValueOrDefault("id");
+        
+        if (string.IsNullOrEmpty(id))
+        {
+            // Return all items
+            return Json(new { items = new[] { "item1", "item2", "item3" } });
+        }
+        else
+        {
+            // Return specific item
+            return Json(new { id = id, name = $"Item {id}" });
+        }
+    }
+    
+    private CgiResponse HandlePost(CgiRequest request)
+    {
+        // TODO: Implement POST logic
+        try
+        {
+            var data = JsonSerializer.Deserialize<Dictionary<string, object>>(request.Body);
+            var newId = Guid.NewGuid().ToString();
+            
+            return Created(new { id = newId, data = data }, $"/{{resource}}/{newId}");
+        }
+        catch (JsonException)
+        {
+            return BadRequest("Invalid JSON");
+        }
+    }
+    
+    private CgiResponse HandlePut(CgiRequest request)
+    {
+        // TODO: Implement PUT logic
+        var id = request.QueryParams.GetValueOrDefault("id");
+        
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("ID is required");
+        }
+        
+        try
+        {
+            var data = JsonSerializer.Deserialize<Dictionary<string, object>>(request.Body);
+            return Ok(new { id = id, data = data, updated = DateTime.UtcNow });
+        }
+        catch (JsonException)
+        {
+            return BadRequest("Invalid JSON");
+        }
+    }
+    
+    private CgiResponse HandleDelete(CgiRequest request)
+    {
+        // TODO: Implement DELETE logic
+        var id = request.QueryParams.GetValueOrDefault("id");
+        
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("ID is required");
+        }
+        
+        return NoContent();
+    }
+}
+
+// Start the service
+await CgiHost.RunAsync(new {{ServiceName}}Service(), Args.ToArray());

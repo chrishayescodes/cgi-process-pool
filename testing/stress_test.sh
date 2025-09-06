@@ -25,6 +25,7 @@ FAILED_TESTS=0
 TOTAL_RESPONSE_TIME=0
 RESPONSE_COUNT=0
 CSHARP_AVAILABLE=false
+CSHARP_ABSTRACTION_AVAILABLE=false
 
 echo -e "${BLUE}🧪 CGI Process Pool Stress Test${NC}"
 echo "========================================"
@@ -57,6 +58,15 @@ check_system() {
     else
         echo -e "${YELLOW}ℹ️  C# script service not available (optional)${NC}"
         CSHARP_AVAILABLE=false
+    fi
+    
+    # Check C# abstraction service if available
+    if curl -s "${YARP_URL}/health" > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ C# abstraction service available${NC}"
+        CSHARP_ABSTRACTION_AVAILABLE=true
+    else
+        echo -e "${YELLOW}ℹ️  C# abstraction service not available (optional)${NC}"
+        CSHARP_ABSTRACTION_AVAILABLE=false
     fi
     
     echo -e "${GREEN}✅ System is running${NC}"
@@ -129,22 +139,60 @@ test_concurrency() {
     for ((i=1; i<=CONCURRENT_REQUESTS; i++)); do
         (
             # Distribute requests across available services
-            if [[ "$CSHARP_AVAILABLE" == "true" ]]; then
+            if [[ "$CSHARP_ABSTRACTION_AVAILABLE" == "true" ]]; then
+                # Include C# abstraction service in rotation with other services
+                case $((i % 4)) in
+                    0) 
+                        # Test C# abstraction endpoints
+                        case $((i % 3)) in
+                            0) url="${YARP_URL}/hello?name=test$i"; expected="Hello, test$i" ;;
+                            1) url="${YARP_URL}/health"; expected="healthy" ;;
+                            2) url="${YARP_URL}/messages"; expected="messages" ;;
+                        esac
+                        local start_time=$(date +%s%N)
+                        local response=$(curl -s "$url" 2>/dev/null)
+                        local end_time=$(date +%s%N)
+                        local response_time=$(( (end_time - start_time) / 1000000 ))
+                        if echo "$response" | grep -q "$expected"; then
+                            echo "$response_time" >> "$results_file"
+                        else
+                            echo "ERROR" >> "$results_file"
+                        fi
+                        ;;
+                    1) 
+                        local result=$(test_request "search" "q=concurrent$i" "results")
+                        echo "$result" >> "$results_file"
+                        ;;
+                    2) 
+                        local result=$(test_request "auth" "user=test$i" "token")
+                        echo "$result" >> "$results_file"
+                        ;;
+                    3) 
+                        if [[ "$CSHARP_AVAILABLE" == "true" ]]; then
+                            local result=$(test_request "csharp" "service=test&data=concurrent$i" "script_type")
+                        else
+                            local result=$(test_request "search" "q=concurrent$i" "results")
+                        fi
+                        echo "$result" >> "$results_file"
+                        ;;
+                esac
+            elif [[ "$CSHARP_AVAILABLE" == "true" ]]; then
                 # Include C# script in rotation
                 case $((i % 3)) in
                     0) service="search"; params="q=concurrent$i"; expected="results" ;;
                     1) service="auth"; params="user=test$i"; expected="token" ;;
                     2) service="csharp"; params="service=test&data=concurrent$i"; expected="script_type" ;;
                 esac
+                local result=$(test_request "$service" "$params" "$expected")
+                echo "$result" >> "$results_file"
             else
                 # Original behavior without C# script
                 local service=$( [ $((i % 2)) -eq 0 ] && echo "search" || echo "auth" )
                 local params=$( [ "$service" = "search" ] && echo "q=concurrent$i" || echo "user=test$i" )
                 local expected=$( [ "$service" = "search" ] && echo "results" || echo "token" )
+                local result=$(test_request "$service" "$params" "$expected")
+                echo "$result" >> "$results_file"
             fi
-            
-            local result=$(test_request "$service" "$params" "$expected")
-            echo "$result" >> "$results_file"
         ) &
         
         # Limit concurrent processes to avoid overwhelming system
@@ -295,6 +343,9 @@ test_health_monitoring() {
 test_api_functionality() {
     echo -e "${YELLOW}🔧 Testing API functionality...${NC}"
     
+    local passed_api_tests=0
+    local total_api_tests=0
+    
     local tests=(
         "search:q=functionality:results"
         "auth:user=testuser:token"
@@ -310,12 +361,11 @@ test_api_functionality() {
         )
     fi
     
-    local passed_api_tests=0
-    
     for test in "${tests[@]}"; do
         IFS=':' read -r service params expected <<< "$test"
         
         local response=$(curl -s "${YARP_URL}/api/${service}?${params}")
+        total_api_tests=$((total_api_tests + 1))
         
         if echo "$response" | grep -q "$expected" && echo "$response" | grep -q "pid"; then
             echo -e "   ✅ ${service} API working"
@@ -325,11 +375,34 @@ test_api_functionality() {
         fi
     done
     
-    if [[ $passed_api_tests -eq ${#tests[@]} ]]; then
+    # Add C# abstraction tests if available
+    if [[ "$CSHARP_ABSTRACTION_AVAILABLE" == "true" ]]; then
+        # Note: These are direct paths, not under /api/
+        local abstraction_tests=(
+            "/hello?name=stresstest:Hello, stresstest"
+            "/health:healthy"
+            "/messages:messages"
+        )
+        
+        for test in "${abstraction_tests[@]}"; do
+            IFS=':' read -r path expected <<< "$test"
+            local response=$(curl -s "${YARP_URL}${path}")
+            total_api_tests=$((total_api_tests + 1))
+            
+            if echo "$response" | grep -q "$expected"; then
+                echo -e "   ✅ C# Abstraction ${path} working"
+                passed_api_tests=$((passed_api_tests + 1))
+            else
+                echo -e "   ❌ C# Abstraction ${path} failed"
+            fi
+        done
+    fi
+    
+    if [[ $passed_api_tests -eq $total_api_tests ]]; then
         echo -e "${GREEN}✅ All API tests passed${NC}"
         PASSED_TESTS=$((PASSED_TESTS + 1))
     else
-        echo -e "${RED}❌ API tests failed: ${passed_api_tests}/${#tests[@]} passed${NC}"
+        echo -e "${RED}❌ API tests failed: ${passed_api_tests}/${total_api_tests} passed${NC}"
         FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
 }
@@ -432,6 +505,7 @@ show_help() {
     echo "  • Search API (C)       - /api/search"
     echo "  • Auth API (C)         - /api/auth"
     echo "  • C# Script API        - /api/csharp (auto-detected)"
+    echo "  • C# Abstraction API   - /health, /hello, /messages (auto-detected)"
     echo ""
     echo "Examples:"
     echo "  $0                      # Run with default settings"
