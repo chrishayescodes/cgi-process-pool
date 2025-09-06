@@ -13,6 +13,25 @@
         "build_command": "gcc -Wall -O2 -pthread -o {executable} {source_file}",
         "health_check": "/?q=health"
       },
+      "dependencies": {
+        "build_tools": [
+          {
+            "name": "gcc",
+            "check_command": "gcc --version",
+            "install_hint": "sudo apt-get install gcc (Ubuntu/Debian) or brew install gcc (macOS)",
+            "version_pattern": "gcc \\(.*\\) ([0-9.]+)",
+            "minimum_version": "4.8"
+          }
+        ],
+        "system_libraries": [
+          {
+            "name": "pthread",
+            "check_method": "compile_test",
+            "test_code": "#include <pthread.h>\nint main() { return 0; }",
+            "install_hint": "Usually included with gcc"
+          }
+        ]
+      },
       "template": {
         "include_headers": [
           "#include <stdio.h>",
@@ -45,6 +64,26 @@
         "command": "python3 ./{executable}",
         "health_check": "/?status=health"
       },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "python3",
+            "check_command": "python3 --version",
+            "install_hint": "sudo apt-get install python3 (Ubuntu/Debian) or brew install python3 (macOS)",
+            "version_pattern": "Python ([0-9.]+)",
+            "minimum_version": "3.6"
+          }
+        ],
+        "packages": [
+          {
+            "name": "requests",
+            "check_method": "python_import",
+            "import_statement": "import requests",
+            "install_hint": "pip3 install requests",
+            "optional": true
+          }
+        ]
+      },
       "template": {
         "shebang": "#!/usr/bin/env python3",
         "imports": [
@@ -75,9 +114,27 @@
       "build_required": false,
       "runtime": {
         "command": "dotnet-script ./{executable}",
-        "health_check": "/?service=health",
-        "requirements": [
-          "dotnet tool install -g dotnet-script"
+        "health_check": "/?service=health"
+      },
+      "dependencies": {
+        "runtime": [
+          {
+            "name": "dotnet",
+            "check_command": "dotnet --version",
+            "install_hint": "Install .NET SDK from https://dotnet.microsoft.com/download",
+            "version_pattern": "([0-9.]+)",
+            "minimum_version": "6.0"
+          }
+        ],
+        "tools": [
+          {
+            "name": "dotnet-script",
+            "check_command": "dotnet-script --version",
+            "install_hint": "dotnet tool install -g dotnet-script",
+            "version_pattern": "([0-9.]+)",
+            "minimum_version": "1.0",
+            "auto_install": "dotnet tool install -g dotnet-script"
+          }
         ]
       },
       "template": {

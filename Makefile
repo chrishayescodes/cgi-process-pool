@@ -130,7 +130,25 @@ install-deps:
 	@echo "✓ Dependencies installed"
 
 check-deps:
-	@./check_dependencies.sh
+	@echo "🔍 Checking dependencies using modular language system..."
+	@./languages/check_dependencies.sh --all
+
+check-deps-verbose:
+	@echo "🔍 Checking dependencies with verbose output..."
+	@./languages/check_dependencies.sh --all --verbose
+
+check-deps-fix:
+	@echo "🔧 Checking dependencies and auto-installing missing ones..."
+	@./languages/check_dependencies.sh --all --fix
+
+check-lang-deps:
+	@if [ -z "$(LANG)" ]; then \
+		echo "Usage: make check-lang-deps LANG=<language>"; \
+		echo "Available languages:"; \
+		./languages/manager.py list | grep "  " | sed 's/^/  /'; \
+	else \
+		./languages/check_dependencies.sh --language $(LANG); \
+	fi
 
 help:
 	@echo "CGI Process Pool - Dynamic Makefile"
@@ -160,10 +178,15 @@ help:
 	@echo "  ./add_python_cgi_app.sh <name> <port> [instances] - Add Python service"
 	@echo "  ./add_csharp_cgi_app.sh <name> <port> [instances] - Add C# script service"
 	@echo ""
+	@echo "Dependency Commands:"
+	@echo "  make check-deps         - Check dependencies for all languages"
+	@echo "  make check-deps-verbose - Check dependencies with detailed output"
+	@echo "  make check-deps-fix     - Check and auto-install missing dependencies"
+	@echo "  make check-lang-deps LANG=<language> - Check specific language dependencies"
+	@echo "  make install-deps       - Install Python dependencies (legacy)"
+	@echo ""
 	@echo "Other Commands:"
-	@echo "  make check-deps    - Check if all dependencies are installed"
-	@echo "  make install-deps  - Install Python dependencies"
-	@echo "  make help          - Show this help message"
+	@echo "  make help              - Show this help message"
 	@echo ""
 	@echo "The build system automatically discovers samples from manifest.json"
 	@echo "and generates appropriate build rules. Edit manifest.json to add new services."

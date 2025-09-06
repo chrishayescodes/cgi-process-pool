@@ -8,9 +8,11 @@ import json
 import os
 import sys
 import argparse
+import subprocess
+import re
 from pathlib import Path
 from string import Template
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 
 class LanguageManager:
     """Manages language definitions and generates automation scripts"""
@@ -249,6 +251,179 @@ fi
 # TODO: Implement actual service template generation
 """
     
+    def check_dependencies(self, language: str) -> Dict[str, Any]:
+        """Check dependencies for a specific language"""
+        lang_config = self.get_language(language)
+        if not lang_config:
+            raise ValueError(f"Language '{language}' not found")
+        
+        dependencies = lang_config.get('dependencies', {})
+        results = {
+            'language': language,
+            'language_name': lang_config['name'],
+            'overall_status': 'success',
+            'categories': {},
+            'missing_dependencies': [],
+            'warnings': [],
+            'auto_installable': []
+        }
+        
+        # Check each dependency category
+        for category, deps in dependencies.items():
+            category_results = []
+            
+            for dep in deps:
+                dep_result = self._check_single_dependency(dep, category)
+                category_results.append(dep_result)
+                
+                if not dep_result['available']:
+                    results['missing_dependencies'].append({
+                        'name': dep['name'],
+                        'category': category,
+                        'install_hint': dep.get('install_hint', 'No install hint available'),
+                        'auto_install': dep.get('auto_install')
+                    })
+                    results['overall_status'] = 'error'
+                    
+                    if dep.get('auto_install'):
+                        results['auto_installable'].append(dep)
+                
+                if dep.get('optional') and not dep_result['available']:
+                    results['warnings'].append(f"Optional dependency '{dep['name']}' not available")
+            
+            results['categories'][category] = category_results
+        
+        return results
+    
+    def _check_single_dependency(self, dep: Dict[str, Any], category: str) -> Dict[str, Any]:
+        """Check a single dependency"""
+        result = {
+            'name': dep['name'],
+            'category': category,
+            'available': False,
+            'version': None,
+            'meets_minimum': True,
+            'details': '',
+            'optional': dep.get('optional', False)
+        }
+        
+        check_method = dep.get('check_method', 'command')
+        
+        try:
+            if check_method == 'command':
+                # Run command-based check
+                cmd_result = subprocess.run(
+                    dep['check_command'].split(),
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                
+                if cmd_result.returncode == 0:
+                    result['available'] = True
+                    result['details'] = cmd_result.stdout.strip()
+                    
+                    # Extract version if pattern provided
+                    if 'version_pattern' in dep and 'minimum_version' in dep:
+                        version_match = re.search(dep['version_pattern'], result['details'])
+                        if version_match:
+                            result['version'] = version_match.group(1)
+                            result['meets_minimum'] = self._version_compare(
+                                result['version'], dep['minimum_version']
+                            ) >= 0
+                        
+                else:
+                    result['details'] = cmd_result.stderr.strip()
+            
+            elif check_method == 'python_import':
+                # Test Python import
+                import_cmd = ["python3", "-c", dep['import_statement']]
+                cmd_result = subprocess.run(
+                    import_cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                result['available'] = cmd_result.returncode == 0
+                if not result['available']:
+                    result['details'] = cmd_result.stderr.strip()
+            
+            elif check_method == 'compile_test':
+                # Test compilation
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
+                    f.write(dep['test_code'])
+                    f.flush()
+                    
+                    compile_cmd = f"gcc -c {f.name} -o /dev/null"
+                    cmd_result = subprocess.run(
+                        compile_cmd.split(),
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    result['available'] = cmd_result.returncode == 0
+                    if not result['available']:
+                        result['details'] = cmd_result.stderr.strip()
+                    
+                    os.unlink(f.name)
+                        
+        except subprocess.TimeoutExpired:
+            result['details'] = "Command timed out"
+        except Exception as e:
+            result['details'] = f"Error: {str(e)}"
+        
+        return result
+    
+    def _version_compare(self, version1: str, version2: str) -> int:
+        """Compare two version strings. Returns -1, 0, or 1"""
+        def normalize(v):
+            return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
+        
+        v1, v2 = normalize(version1), normalize(version2)
+        return (v1 > v2) - (v1 < v2)
+    
+    def check_all_languages(self) -> Dict[str, Dict[str, Any]]:
+        """Check dependencies for all languages"""
+        results = {}
+        for language in self.list_languages():
+            try:
+                results[language] = self.check_dependencies(language)
+            except Exception as e:
+                results[language] = {
+                    'language': language,
+                    'overall_status': 'error',
+                    'error': str(e)
+                }
+        return results
+    
+    def auto_install_dependencies(self, language: str, dry_run: bool = True) -> List[str]:
+        """Auto-install dependencies that support it"""
+        lang_results = self.check_dependencies(language)
+        install_commands = []
+        
+        for dep in lang_results.get('auto_installable', []):
+            if 'auto_install' in dep:
+                install_commands.append(dep['auto_install'])
+                
+                if not dry_run:
+                    print(f"Installing {dep['name']}...")
+                    try:
+                        result = subprocess.run(
+                            dep['auto_install'].split(),
+                            capture_output=True,
+                            text=True,
+                            timeout=120
+                        )
+                        if result.returncode == 0:
+                            print(f"✅ Successfully installed {dep['name']}")
+                        else:
+                            print(f"❌ Failed to install {dep['name']}: {result.stderr}")
+                    except Exception as e:
+                        print(f"❌ Error installing {dep['name']}: {str(e)}")
+        
+        return install_commands
+
     def update_discovery_system(self, language: str) -> None:
         """Update discovery.py to support the new language"""
         lang_config = self.get_language(language)
@@ -287,11 +462,13 @@ def get_{language}_samples(manifest):
 
 def main():
     parser = argparse.ArgumentParser(description='Language Manager for CGI Process Pool')
-    parser.add_argument('command', choices=['list', 'info', 'generate-script', 'add', 'update-discovery'],
+    parser.add_argument('command', choices=['list', 'info', 'generate-script', 'add', 'update-discovery', 'check-deps', 'check-all-deps', 'install-deps'],
                         help='Command to execute')
     parser.add_argument('--language', help='Language name')
-    parser.add_argument('--config', default='languages.json', help='Config file path')
+    parser.add_argument('--config', default='languages/definitions.json', help='Config file path')
     parser.add_argument('--output', help='Output file path for generated scripts')
+    parser.add_argument('--dry-run', action='store_true', help='Show what would be installed without installing')
+    parser.add_argument('--verbose', action='store_true', help='Show detailed output')
     
     args = parser.parse_args()
     
@@ -341,10 +518,96 @@ def main():
                 sys.exit(1)
             
             manager.update_discovery_system(args.language)
+        
+        elif args.command == 'check-deps':
+            if not args.language:
+                print("Error: --language required for check-deps command")
+                sys.exit(1)
+            
+            results = manager.check_dependencies(args.language)
+            _print_dependency_results(results, args.verbose)
+        
+        elif args.command == 'check-all-deps':
+            results = manager.check_all_languages()
+            for lang, lang_results in results.items():
+                print(f"\n{'=' * 50}")
+                _print_dependency_results(lang_results, args.verbose)
+        
+        elif args.command == 'install-deps':
+            if not args.language:
+                print("Error: --language required for install-deps command")
+                sys.exit(1)
+            
+            install_cmds = manager.auto_install_dependencies(args.language, dry_run=args.dry_run)
+            
+            if args.dry_run:
+                if install_cmds:
+                    print(f"\nWould run the following commands to install dependencies for {args.language}:")
+                    for cmd in install_cmds:
+                        print(f"  {cmd}")
+                else:
+                    print(f"No auto-installable dependencies found for {args.language}")
+            else:
+                if install_cmds:
+                    print(f"Installed {len(install_cmds)} dependencies for {args.language}")
+                else:
+                    print(f"No dependencies to install for {args.language}")
             
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
+
+def _print_dependency_results(results: Dict[str, Any], verbose: bool = False) -> None:
+    """Print dependency check results in a readable format"""
+    lang_name = results.get('language_name', results.get('language', 'Unknown'))
+    status = results.get('overall_status', 'unknown')
+    
+    # Status icon
+    status_icon = "✅" if status == 'success' else "❌" if status == 'error' else "⚠️"
+    print(f"{status_icon} {lang_name} Dependencies")
+    
+    if 'error' in results:
+        print(f"   Error: {results['error']}")
+        return
+    
+    # Category results
+    categories = results.get('categories', {})
+    for category, deps in categories.items():
+        print(f"\n  📦 {category.title()}:")
+        for dep in deps:
+            dep_icon = "✅" if dep['available'] else "❌"
+            optional_text = " (optional)" if dep.get('optional') else ""
+            print(f"    {dep_icon} {dep['name']}{optional_text}")
+            
+            if verbose or not dep['available']:
+                if dep.get('version'):
+                    version_status = "✅" if dep.get('meets_minimum', True) else "⚠️ (below minimum)"
+                    print(f"       Version: {dep['version']} {version_status}")
+                if dep.get('details'):
+                    print(f"       Details: {dep['details']}")
+    
+    # Missing dependencies
+    missing = results.get('missing_dependencies', [])
+    if missing:
+        print(f"\n  ❌ Missing Dependencies:")
+        for dep in missing:
+            auto_install_text = " (auto-installable)" if dep.get('auto_install') else ""
+            print(f"    • {dep['name']} ({dep['category']}){auto_install_text}")
+            print(f"      Install: {dep['install_hint']}")
+    
+    # Warnings
+    warnings = results.get('warnings', [])
+    if warnings:
+        print(f"\n  ⚠️  Warnings:")
+        for warning in warnings:
+            print(f"    • {warning}")
+    
+    # Auto-installable dependencies
+    auto_installable = results.get('auto_installable', [])
+    if auto_installable:
+        print(f"\n  🔧 Auto-installable:")
+        for dep in auto_installable:
+            print(f"    • {dep['name']}: {dep.get('auto_install', 'N/A')}")
 
 if __name__ == '__main__':
     main()
