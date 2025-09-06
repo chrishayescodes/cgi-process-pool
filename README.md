@@ -1,175 +1,196 @@
-# CGI Process Pool - Proof of Concept
+# CGI Process Pool with YARP Proxy
 
-A modern implementation of CGI-style process isolation with pooling for performance, demonstrating how to combine classic CGI architecture with modern tooling.
+A modern implementation of CGI-style process pools using YARP (Yet Another Reverse Proxy) for load balancing, health monitoring, and comprehensive observability.
 
-## Architecture
+## ✨ Features
 
-```
-[nginx] → [Pool Manager] → [CGI Process Pool]
-   ↓           ↓              ↓
-HTTP        Process        HTTP Server
-Router      Spawner        (search.cgi/auth.cgi)
-```
+- **🔧 CGI Process Pool**: C-based HTTP servers with socket communication
+- **⚡ YARP Reverse Proxy**: Modern .NET-based load balancing and routing  
+- **📊 Integrated Admin Dashboard**: Real-time monitoring with live metrics
+- **🔄 Load Balancing**: Round-robin distribution with health checks
+- **📈 Request Tracking**: Detailed metrics and analytics
+- **🚀 Automated Service Addition**: One-command CGI app integration
+- **🏥 Health Monitoring**: Automatic failover and process management
 
-## Features
+## 🚀 Quick Start
 
-- **Process Isolation**: Each CGI process runs independently
-- **Dynamic Pooling**: Automatic scaling between min/max processes
-- **Health Monitoring**: Continuous health checks with automatic recovery
-- **Load Balancing**: nginx distributes requests across healthy processes
-- **Language Agnostic**: CGI processes can be written in any language
-- **Fault Tolerance**: Individual process crashes don't affect the system
-
-## Quick Start
-
-### Prerequisites
-
-- GCC compiler
-- Python 3.6+
-- nginx
-- make
-
-### Installation
-
-1. Install Python dependencies:
+### 1. Check Dependencies
 ```bash
-make install-deps
+make check-deps
 ```
 
-2. Build the CGI executables:
+### 2. Build and Run
 ```bash
+# Build all services
 make all
-```
 
-### Running the Demo
-
-The easiest way to see everything in action:
-
-```bash
-make run-demo
-```
-
-This will:
-1. Build the CGI executables
-2. Start the pool manager
-3. Configure and start nginx
-4. Run test requests
-5. Demonstrate load balancing
-
-### Manual Operation
-
-1. Start just the pool manager:
-```bash
+# Terminal 1: Start process pool
 make run-pool
+
+# Terminal 2: Start YARP proxy with admin dashboard  
+make run-yarp
 ```
 
-2. In another terminal, configure and start nginx:
+### 3. Access Your System
+- **🌐 Admin Dashboard**: http://localhost:8080/admin
+- **📊 API Metrics**: http://localhost:8080/api/metrics  
+- **🔍 Search API**: http://localhost:8080/api/search?q=test
+- **🔐 Auth API**: http://localhost:8080/api/auth?user=demo
+
+## 🤖 Adding New Services (Automated)
+
+Add a complete new CGI service with one command:
+
 ```bash
-sudo nginx -c $(pwd)/nginx.conf
+# Add an "orders" service with 2 instances on ports 8005-8006
+./add_cgi_app.sh orders 8005 2
+
+# Add a "products" service with 3 instances  
+./add_cgi_app.sh products 8007 3
 ```
 
-3. Test the endpoints:
+**What this does automatically:**
+- ✅ Creates complete C source code
+- ✅ Updates YARP configuration 
+- ✅ Configures load balancing and health checks
+- ✅ Integrates with admin dashboard
+- ✅ Builds and tests the service
+
+## 🧪 Testing
+
+### API Tests
 ```bash
-# Search API
-curl "http://localhost/api/search?q=test"
+# Test services
+curl "http://localhost:8080/api/search?q=test"
+curl "http://localhost:8080/api/auth?user=demo"
 
-# Auth API  
-curl "http://localhost/api/auth?user=john"
-
-# Pool status
-curl "http://localhost/pool-status"
+# Check system health
+curl "http://localhost:8080/api/metrics/summary" | jq
 ```
 
-## Project Structure
-
-```
-.
-├── search.c          # Search CGI service (C)
-├── auth.c            # Auth CGI service (C)
-├── pool_manager.py   # Process pool manager (Python)
-├── nginx.conf        # nginx configuration
-├── demo.sh           # Demo script
-├── Makefile          # Build automation
-└── README.md         # This file
-```
-
-## How It Works
-
-1. **CGI Processes**: Simple HTTP servers written in C that handle one request at a time
-2. **Pool Manager**: Python script that:
-   - Spawns CGI processes on different ports
-   - Monitors process health
-   - Maintains min/max process counts
-   - Generates nginx upstream configuration
-3. **nginx**: Routes incoming requests to healthy CGI processes using upstream pools
-
-## Configuration
-
-### Pool Manager Settings
-
-Edit `pool_manager.py` to adjust:
-- `min_processes`: Minimum processes per pool (default: 2)
-- `max_processes`: Maximum processes per pool (default: 5)
-- Health check interval (default: 5 seconds)
-
-### Adding New CGI Services
-
-1. Create your CGI executable (any language)
-2. Add to `pool_manager.py`:
-```python
-manager.add_pool('service_name', './service.cgi', min_processes=2, max_processes=5)
-```
-3. Add nginx location block in `nginx.conf`
-
-## Testing
-
-Run basic tests:
+### Load Balancing Verification
 ```bash
-make test
+# See different PIDs (proves load balancing)
+for i in {1..4}; do
+  curl -s "http://localhost:8080/api/search?q=test$i" | jq '.pid'
+done
 ```
 
-## Monitoring
+## 📁 Project Structure
 
-The pool manager outputs status information:
-- Process spawning/termination
-- Health check results
-- Port assignments
+```
+cgi-process-pool/
+├── 🔧 Core Services
+│   ├── search.c                 # Search CGI service
+│   ├── auth.c                   # Auth CGI service  
+│   └── pool_manager.py          # Process lifecycle manager
+├── 🌐 YARP Proxy
+│   └── proxy/CGIProxy/          # Reverse proxy + admin UI
+├── 🤖 Automation
+│   ├── add_cgi_app.sh          # Automated service addition
+│   └── check_dependencies.sh   # System requirements checker
+├── 📚 Documentation  
+│   └── .docs/                   # Comprehensive guides
+└── ⚙️ Build System
+    ├── Makefile                 # Build automation
+    └── demo.sh                  # Legacy demo
+```
 
-Check `/tmp/cgi_upstreams.conf` to see the generated nginx upstream configuration.
+## 📚 Documentation
 
-## Cleanup
+| Document | Description |
+|----------|-------------|
+| **[Architecture Guide](.docs/ARCHITECTURE.md)** | System architecture and components |
+| **[Adding CGI Apps](.docs/ADDING_CGI_APPS.md)** | Automated service integration guide |
+| **[Manual Pool Setup](.docs/ADDING_NEW_POOLS.md)** | Step-by-step manual process |
+| **[Original POC](.docs/cgi_pool_poc.md)** | Initial proof of concept |
 
-Stop all services:
+## 🏗️ Architecture Overview
+
+```
+Client → YARP Proxy (8080) → CGI Pool (8000-8002) → Response
+            ↓
+    Admin Dashboard + Metrics + Health Monitoring
+```
+
+**Key Components:**
+- **YARP Proxy**: Modern reverse proxy with observability
+- **CGI Services**: Fast C-based HTTP servers
+- **Pool Manager**: Python service for process lifecycle
+- **Admin Dashboard**: Real-time monitoring interface
+
+## 🔧 Available Commands
+
 ```bash
-# If using demo.sh, just press Ctrl+C
+# Build and test
+make all              # Build all CGI services
+make test            # Run basic functionality tests  
+make clean           # Clean build artifacts
 
-# Or manually:
-pkill -f pool_manager.py
-sudo nginx -s stop
-make clean
+# Run system
+make run-pool        # Start CGI process pool
+make run-yarp        # Start YARP proxy with admin dashboard
+make run-demo        # Legacy nginx demo
+
+# Add services  
+./add_cgi_app.sh <name> <port> [instances]
+
+# Check system
+make check-deps      # Verify dependencies
+make help           # Show all available commands
 ```
 
-## Benefits Demonstrated
+## 📊 Monitoring Features
 
-1. **Process Isolation**: Each request can be handled by a separate process
-2. **Language Flexibility**: Mix C, Python, Go, Rust, etc.
-3. **Simple Deployment**: No application servers or frameworks required
-4. **Standard Tools**: Uses nginx, systemd, Docker (all standard ops tools)
-5. **Fault Tolerance**: Process crashes don't bring down the service
-6. **Dynamic Scaling**: Adjust process count based on load
+The system provides comprehensive observability:
 
-## Next Steps for Production
+- **📈 Real-time Metrics**: Request rates, response times, error rates
+- **🏥 Health Monitoring**: Active health checks with automatic failover  
+- **⚖️ Load Distribution**: Service usage and balancing statistics
+- **🔍 Request Tracking**: Individual request tracing and correlation
+- **📱 Live Dashboard**: Web-based admin interface with auto-refresh
 
-- Add proper HTTP/1.1 support to CGI processes
-- Implement request/response streaming
-- Add metrics collection (Prometheus)
-- Use Unix domain sockets for better performance
-- Container deployment with Docker Compose
-- systemd service files for process management
-- TLS termination at nginx
-- Rate limiting and DDoS protection
-- Distributed tracing support
+## 🚀 Advanced Features
 
-## License
+### Automatic Service Integration
+- One command adds complete CGI service
+- Full YARP route configuration
+- Load balancing and health checks  
+- Admin dashboard integration
 
-This is a proof of concept for demonstration purposes.
+### Production-Ready Monitoring
+- Structured logging with Serilog
+- Request correlation IDs
+- Performance analytics
+- Error tracking and alerting
+
+### Modern Architecture
+- .NET 8 based YARP proxy
+- Multithreaded C services
+- Python process management
+- Clean separation of concerns
+
+## 🏛️ Legacy Support
+
+nginx compatibility included for migration scenarios:
+```bash
+make run-demo  # Run with nginx (legacy)
+```
+
+**Recommendation**: Use YARP-based approach for superior observability and modern .NET ecosystem integration.
+
+## 📋 Requirements
+
+- **GCC**: C compiler with pthread support
+- **Python 3**: Process management  
+- **.NET 8 SDK**: YARP proxy
+- **curl + jq**: Testing tools (optional)
+
+## 🎯 Perfect For
+
+- **Learning**: Modern CGI and reverse proxy concepts
+- **Development**: Fast HTTP service prototyping  
+- **Architecture**: Microservice patterns with observability
+- **Integration**: .NET ecosystem with C services
+
+This project demonstrates how to build modern, observable CGI-style architectures with comprehensive monitoring and automated service management.
