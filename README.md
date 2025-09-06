@@ -2,6 +2,8 @@
 
 A modern implementation of CGI-style process pools using YARP (Yet Another Reverse Proxy) for load balancing, health monitoring, and comprehensive observability.
 
+**🎓 Educational Focus**: This project serves as a comprehensive learning platform for systems programming, web architecture, and distributed systems concepts. Perfect for understanding how modern web infrastructure works from the ground up!
+
 ## ✨ Features
 
 - **🔧 CGI Process Pool**: C-based HTTP servers with socket communication
@@ -212,12 +214,20 @@ cgi-process-pool/
 
 | Document | Description |
 |----------|-------------|
+| **📚 Learning & Education** ||
+| **[Learning Guide](.docs/LEARNING_GUIDE.md)** | **🎓 START HERE**: Comprehensive educational guide with learning objectives |
+| **[Interactive Walkthrough](.docs/WALKTHROUGH.md)** | **🚀 HANDS-ON**: Step-by-step tutorial with exercises and experiments |
+| **[Core Concepts](.docs/CONCEPTS_OVERVIEW.md)** | **🧠 THEORY**: Deep dive into computer science concepts demonstrated |
+| **[Tutorial: Build a Service](.docs/TUTORIAL_BUILD_SERVICE.md)** | **⚒️ PRACTICE**: Build your own calculator service from scratch |
+| **📋 System Documentation** ||
 | **[Architecture Guide](.docs/ARCHITECTURE.md)** | System architecture and components |
 | **[Operations Management](ops/README.md)** | **NEW**: Process lifecycle management system |
 | **[Modular Languages](.docs/MODULAR_LANGUAGES.md)** | **NEW**: Extensible language plugin system |
+| **📄 Configuration Reference** ||
 | **[Sample Applications](discovery/manifest.json)** | Sample registry with all available services |
 | **[Language Definitions](languages/definitions.json)** | **NEW**: Supported programming languages |
 | **[Proxy Backends](proxy/backends.json)** | **NEW**: Modular proxy system definitions |
+| **🔧 Implementation Guides** ||
 | **[Adding CGI Apps](.docs/ADDING_CGI_APPS.md)** | Automated service integration guide |
 | **[Manual Pool Setup](.docs/ADDING_NEW_POOLS.md)** | Step-by-step manual process |
 | **[Original POC](.docs/cgi_pool_poc.md)** | Initial proof of concept |
@@ -356,9 +366,32 @@ Based on stress testing results:
 
 ## 🎯 Perfect For
 
-- **Learning**: Modern CGI and reverse proxy concepts
-- **Development**: Fast HTTP service prototyping in C, Python, and C#
-- **Architecture**: Microservice patterns with observability
-- **Integration**: .NET ecosystem with multi-language service support
+### 🎓 Learning & Education
+- **Systems Programming**: Socket programming, process management, HTTP protocol
+- **Web Architecture**: Load balancing, reverse proxies, microservices patterns
+- **DevOps Concepts**: Process lifecycle, health monitoring, graceful deployment
+- **Multi-Language Integration**: Polyglot programming and runtime coordination
 
-This project demonstrates how to build modern, observable CGI-style architectures with comprehensive monitoring and automated service management.
+### 🛠️ Development & Prototyping  
+- **Fast HTTP Services**: Rapid prototyping in C, Python, and C#
+- **Architecture Exploration**: Microservice patterns with observability
+- **Performance Testing**: Load balancing and scaling behavior analysis
+- **Integration Projects**: .NET ecosystem with multi-language service support
+
+### 📚 Computer Science Education
+- **Distributed Systems**: Practical implementation of theoretical concepts
+- **Network Programming**: Real-world TCP/IP and HTTP protocol usage
+- **Operating Systems**: Process management, IPC, and system programming
+- **Software Engineering**: Configuration-driven design and modular architecture
+
+## 🎓 Learning Outcomes
+
+Students and practitioners will gain hands-on experience with:
+- Building HTTP servers from scratch using system calls
+- Understanding load balancing and reverse proxy implementations  
+- Managing multi-process applications with health monitoring
+- Creating production-ready deployment and lifecycle management
+- Integrating multiple programming languages in a single system
+- Implementing observability and monitoring in distributed systems
+
+This project bridges the gap between theoretical computer science concepts and real-world system implementation, making it perfect for educational environments and self-directed learning.
