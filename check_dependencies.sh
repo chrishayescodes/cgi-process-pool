@@ -66,6 +66,9 @@ get_version() {
         curl)
             echo "($(curl --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+\.\d+' | head -n1))"
             ;;
+        dotnet)
+            echo "($(dotnet --version 2>/dev/null))"
+            ;;
         *)
             echo ""
             ;;
@@ -200,10 +203,15 @@ echo -e "${BLUE}Core Dependencies:${NC}"
 check_command "gcc" "GCC Compiler" true "apt install gcc || yum install gcc"
 check_command "make" "Make" true "apt install make || yum install make"
 check_command "python3" "Python 3" true "apt install python3 || yum install python3"
-check_command "nginx" "nginx" true "apt install nginx || yum install nginx"
+
+echo -e "\n${BLUE}YARP Proxy Dependencies:${NC}"
+check_command "dotnet" ".NET 8 SDK" true "Visit https://dot.net/download or use ./dotnet-install.sh"
 
 echo -e "\n${BLUE}Python Dependencies:${NC}"
 check_python_module "requests" "requests" "requests"
+
+echo -e "\n${BLUE}Legacy Dependencies (for nginx demo):${NC}"
+check_command "nginx" "nginx" false "apt install nginx || yum install nginx"
 
 echo -e "\n${BLUE}Optional Tools:${NC}"
 check_command "curl" "cURL" false "apt install curl || yum install curl"
@@ -249,7 +257,9 @@ echo -e "${BLUE}========================================${NC}"
 
 if [ "$ALL_DEPS_MET" = true ] && [ ${#WARNINGS[@]} -eq 0 ]; then
     echo -e "${GREEN}✅ All dependencies are satisfied!${NC}"
-    echo -e "${GREEN}You can run: make run-demo${NC}"
+    echo -e "${GREEN}You can run:${NC}"
+    echo -e "  ${GREEN}make run-pool  # Start CGI process pool${NC}"
+    echo -e "  ${GREEN}make run-yarp  # Start YARP proxy with admin dashboard${NC}"
     exit 0
 elif [ "$ALL_DEPS_MET" = true ] && [ ${#WARNINGS[@]} -gt 0 ]; then
     echo -e "${GREEN}✓ Core dependencies satisfied${NC}"
@@ -277,16 +287,22 @@ else
     # Offer quick install command for common distros
     echo -e "\n${BLUE}Quick install commands:${NC}"
     echo -e "${YELLOW}Ubuntu/Debian:${NC}"
-    echo "  sudo apt update && sudo apt install -y gcc make python3 python3-pip nginx curl"
+    echo "  sudo apt update && sudo apt install -y gcc make python3 python3-pip curl"
     echo "  pip3 install requests"
+    echo "  # Install .NET 8 SDK:"
+    echo "  ./dotnet-install.sh --channel 8.0"
     echo ""
     echo -e "${YELLOW}RHEL/CentOS/Fedora:${NC}"
-    echo "  sudo yum install -y gcc make python3 python3-pip nginx curl"
+    echo "  sudo yum install -y gcc make python3 python3-pip curl"
     echo "  pip3 install requests"
+    echo "  # Install .NET 8 SDK:"
+    echo "  ./dotnet-install.sh --channel 8.0"
     echo ""
     echo -e "${YELLOW}macOS (with Homebrew):${NC}"
-    echo "  brew install gcc make python3 nginx curl"
+    echo "  brew install gcc make python3 curl"
     echo "  pip3 install requests"
+    echo "  # Install .NET 8 SDK:"
+    echo "  brew install --cask dotnet-sdk"
     
     exit 1
 fi
