@@ -35,7 +35,7 @@ make all
 
 ### 3. Run the System
 ```bash
-# Terminal 1: Start process pool (auto-configured from samples.json)
+# Terminal 1: Start process pool (auto-configured from manifest.json)
 make run-pool
 
 # Terminal 2: Start YARP proxy with admin dashboard  
@@ -69,27 +69,27 @@ Add a complete new CGI service with one command:
 
 ## 🔍 Dynamic Discovery System
 
-The build system automatically discovers samples from the JSON manifest and configures everything dynamically:
+The build system automatically discovers applications from the JSON manifest and configures everything dynamically:
 
 ### Discovery Commands
 ```bash
-# List all available samples
+# List all available applications
 make discover
 
 # Filter by language
-make discover-c         # C samples only
-make discover-python    # Python samples only  
+make discover-c         # C applications only
+make discover-python    # Python applications only  
 
-# Get detailed information about a sample
+# Get detailed information about an application
 make sample-info SAMPLE=search
 
 # Show pool manager configuration
 make pool-config
 ```
 
-### Adding New Samples
-1. Place your source in `.samples/c/` or `.samples/python/`
-2. Add entry to `.samples/samples.json`:
+### Adding New Applications
+1. Place your source anywhere (apps can live anywhere)
+2. Add entry to `manifest.json`:
 ```json
 {
   "my_service": {
@@ -97,7 +97,7 @@ make pool-config
     "description": "Description here", 
     "language": "c",
     "type": "core",
-    "path": "c/my_service.c",
+    "path": "src/my_service.c",
     "executable": "my_service.cgi",
     "default_ports": [8005, 8006]
   }
@@ -109,7 +109,7 @@ make pool-config
 - ✅ Automatic build rule generation
 - ✅ Dynamic pool configuration  
 - ✅ Language-agnostic integration
-- ✅ Self-documenting samples
+- ✅ Self-documenting applications
 - ✅ Zero manual configuration
 
 ## 🧪 Testing
