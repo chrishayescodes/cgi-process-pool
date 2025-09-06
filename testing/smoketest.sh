@@ -115,9 +115,14 @@ run_test() {
     
     # Execute request
     local response=$(eval $curl_cmd 2>/dev/null || echo "CURL_ERROR|0")
-    local status_code=$(echo "$response" | tail -c 10 | cut -d'|' -f1)
-    local response_time=$(echo "$response" | tail -c 10 | cut -d'|' -f2)
-    local body=$(echo "$response" | head -c -10)
+    
+    # Parse response - format is: body + status_code|response_time
+    local last_line=$(echo "$response" | tail -c 20)
+    local status_code=$(echo "$last_line" | grep -o '[0-9][0-9][0-9]|[0-9.]*$' | cut -d'|' -f1 || echo "UNKNOWN")
+    local response_time=$(echo "$last_line" | grep -o '[0-9][0-9][0-9]|[0-9.]*$' | cut -d'|' -f2 || echo "0")
+    
+    # Extract body by removing the status line
+    local body=$(echo "$response" | sed 's/[0-9][0-9][0-9]|[0-9.]*$//' || echo "$response")
     
     log_verbose "Status: $status_code, Time: ${response_time}s"
     

@@ -10,7 +10,7 @@ import sys
 import argparse
 from pathlib import Path
 
-MANIFEST_FILE = Path("manifest.json")
+MANIFEST_FILE = Path(__file__).parent / "manifest.json"
 
 def load_manifest():
     """Load the manifest file - required for operation"""

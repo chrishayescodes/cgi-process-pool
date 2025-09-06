@@ -191,7 +191,7 @@ class PoolManager:
 
 def load_manifest():
     """Load manifest.json - required for operation"""
-    manifest_path = Path("manifest.json")
+    manifest_path = Path("discovery/manifest.json")
     if not manifest_path.exists():
         print(f"❌ {manifest_path} not found", file=sys.stderr)
         print("The manifest.json file is required for pool configuration.", file=sys.stderr)
