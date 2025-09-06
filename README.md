@@ -1,5 +1,7 @@
 # CGI Process Pool with YARP Proxy
 
+📝 **Read the Blog Post**: [The CGI Renaissance: Why Old Tech Patterns Are New Again](https://github.com/chrishayescodes/journal/blob/master/2025-09-05-cgi-renaissance-blog.md)
+
 A modern implementation of CGI-style process pools using YARP (Yet Another Reverse Proxy) for load balancing, health monitoring, and comprehensive observability.
 
 **🎓 Educational Focus**: This project serves as a comprehensive learning platform for systems programming, web architecture, and distributed systems concepts. Perfect for understanding how modern web infrastructure works from the ground up!
