@@ -1,0 +1,79 @@
+{
+  "version": "1.0",
+  "description": "CGI Process Pool Sample Applications Registry",
+  "samples": {
+    "search": {
+      "name": "Search Service",
+      "description": "Sample search API with JSON responses and query parameter handling",
+      "language": "c",
+      "type": "core",
+      "path": "c/search.c",
+      "executable": "search.cgi",
+      "default_ports": [8000, 8001],
+      "health_check": "/?q=health",
+      "api_endpoint": "/api/search",
+      "examples": [
+        "curl \"http://localhost:8080/api/search?q=test\"",
+        "curl \"http://localhost:8080/api/search?q=health\""
+      ],
+      "features": [
+        "Query parameter parsing",
+        "JSON response format",
+        "Process identification",
+        "Basic HTTP server"
+      ]
+    },
+    "auth": {
+      "name": "Authentication Service", 
+      "description": "Sample authentication API with user validation and token generation",
+      "language": "c",
+      "type": "core",
+      "path": "c/auth.c",
+      "executable": "auth.cgi",
+      "default_ports": [8002],
+      "health_check": "/?user=health",
+      "api_endpoint": "/api/auth",
+      "examples": [
+        "curl \"http://localhost:8080/api/auth?user=demo\"",
+        "curl \"http://localhost:8080/api/auth?user=health\""
+      ],
+      "features": [
+        "User parameter validation",
+        "Token generation simulation",
+        "JSON response format",
+        "Single instance design"
+      ]
+    }
+  },
+  "templates": {
+    "c_service": {
+      "name": "C Service Template",
+      "description": "Template for creating new C-based CGI services",
+      "language": "c",
+      "path": "templates/c_service_template.c",
+      "features": [
+        "HTTP request parsing",
+        "JSON response generation", 
+        "Signal handling",
+        "Process identification",
+        "Health check support"
+      ]
+    }
+  },
+  "categories": {
+    "core": {
+      "name": "Core Services",
+      "description": "Essential services that demonstrate basic CGI functionality"
+    },
+    "template": {
+      "name": "Service Templates",
+      "description": "Reusable templates for creating new services"
+    }
+  },
+  "metadata": {
+    "created": "2025-09-06T02:44:00Z",
+    "updated": "2025-09-06T02:52:00Z",
+    "schema_version": "1.0",
+    "compatible_versions": ["1.0.0+"]
+  }
+}
