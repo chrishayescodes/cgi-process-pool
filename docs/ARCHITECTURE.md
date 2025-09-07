@@ -1,28 +1,32 @@
-# CGI Process Pool Architecture
+# How this thing actually works
 
-## Overview
-Modern CGI-style architecture with YARP reverse proxy, comprehensive monitoring, and load balancing.
+## The basic idea
 
-## Architecture Components
+So I wanted to see what happens if you take the old CGI model (spawn a process per request) but make it smarter. Instead of spawning fresh processes every time, we keep pools of them running and load balance between them.
 
-### 1. CGI Process Pool
-- **Search Service**: C-based processes on ports 8000-8001
-- **Auth Service**: C-based process on port 8002  
-- **Python CGI Service**: Python-based process on port 8003
-- **C# Script Service**: C# dotnet-script process on port 8004
-- **C# Abstraction Service**: Transport-agnostic C# service on port 8005
-- **Pool Manager**: Python service managing process lifecycle with dynamic port allocation
+The twist? I used YARP (Microsoft's reverse proxy) to handle all the routing instead of nginx. Turns out it's pretty flexible for this kind of experiment.
 
-### 2. YARP Reverse Proxy (Port 8080)
-- **Load Balancing**: Round-robin across CGI processes
-- **Health Monitoring**: Active health checks every 10 seconds
-- **Request Tracking**: Comprehensive middleware capturing all requests
-- **Cross-cutting Concerns**: Logging, metrics, error handling
+## What's running where
 
-### 3. Admin Portal (Port 5000)
-- **Process Monitoring**: Real-time status of CGI processes
-- **SignalR Integration**: Live updates to dashboard
-- **Background Services**: Continuous health monitoring
+### The worker processes
+These are the actual CGI services doing the work:
+- **Search service**: Some C code that handles search queries (ports 8000-8001, because load balancing)
+- **Auth service**: Also C, handles authentication stuff (port 8002)  
+- **Python service**: Because sometimes you want Python for things (port 8003)
+- **C# script service**: Using dotnet-script for C# without compilation (port 8004)
+- **C# abstraction service**: The fancy one Claude helped me build (port 8005)
+
+A Python script (pool manager) babysits all these processes - restarts them when they crash, assigns ports dynamically, keeps track of what's healthy.
+
+### YARP proxy (Port 8080)
+This is where all requests come in. YARP handles:
+- **Routing**: `/api/search` goes to search processes, `/api/auth` goes to auth, etc.
+- **Load balancing**: Multiple search processes? Round-robin between them
+- **Health checks**: Pings processes every 10 seconds, removes unhealthy ones
+- **Metrics**: Tracks response times, success rates, all that good stuff
+
+### Admin dashboard
+Built into YARP, shows you what's happening in real-time. Nothing fancy, just useful.
 
 ## Request Flow
 ```
@@ -33,29 +37,24 @@ Client Request → YARP Proxy (8080) → CGI Processes (8000-8005) → Response
               Metrics Collection & Storage
 ```
 
-## Dynamic Port Management
+## The port management thing
 
-The system implements intelligent port management to eliminate conflicts and enable flexible deployment:
+One annoying problem I kept hitting: port conflicts. You know how it goes - "Error: port 8080 already in use" and then you spend 10 minutes hunting down what's using it.
 
-### Build-Time Configuration
-1. **Clean Builds**: `make all` now runs `clean` first, ensuring fresh state
-2. **YARP Config Generation**: Python script generates proxy configuration from manifest
-3. **Fallback Strategy**: Uses manifest default ports when runtime data unavailable
+So Claude and I built a system that figures this out automatically:
 
-### Runtime Port Allocation
-1. **Pool Manager**: Dynamically assigns available ports to services
-2. **Port Mapping**: Creates `/tmp/cgi_ports.json` with actual running ports
-3. **Configuration Update**: YARP config uses runtime ports when available
+### How it works
+1. **Build time**: When you run `make all`, it cleans everything first, then generates a YARP config based on what *should* be running
+2. **Runtime**: The pool manager starts services, finds available ports, and writes the actual port assignments to `/tmp/cgi_ports.json`
+3. **Next build**: YARP config generation reads the runtime ports if they exist, falls back to defaults if not
 
-### Port Files
-- `/tmp/cgi_ports.json` - Runtime port assignments (ignored by git)
-- `/tmp/cgi_upstreams.conf` - Nginx upstream configuration (ignored by git)
-- `proxy/CGIProxy/appsettings.json` - Generated YARP configuration
+This means:
+- No more port conflicts between services
+- The system adapts to whatever ports are actually available
+- Clean builds work from any state
+- You can see what's actually running vs what's configured
 
-### Port Resolution Priority
-1. **Runtime Ports**: Read from `/tmp/cgi_ports.json` if available
-2. **Manifest Ports**: Fall back to `default_ports` in `discovery/manifest.json`
-3. **Dynamic Assignment**: Pool manager finds available ports automatically
+The Python script is pretty simple - it just scans for available ports starting from the defaults and updates the JSON file. YARP reads from that file and routes accordingly.
 
 ## Key Features
 

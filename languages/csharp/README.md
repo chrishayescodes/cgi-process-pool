@@ -1,14 +1,17 @@
 # C# CGI Abstraction
 
-A clean abstraction layer for building CGI services in C# scripts (.csx) that supports multiple transport modes.
+This is the part I'm most proud of - Claude and I built a pretty clean abstraction for writing CGI services in C# that works with both traditional CGI (stdin/stdout) and modern socket communication. Same code, different transports.
 
-## Features
+## Why this is cool
 
-- **Transport Agnostic**: Support for socket (TCP) and stdio (classic CGI) transports
-- **Simple API**: Focus on HTTP semantics without dealing with networking
-- **Built-in Helpers**: Convenient response methods (Ok, NotFound, Json, Html, etc.)
-- **Testable**: Easy unit testing without network setup
-- **Lightweight**: Uses C# scripting with dotnet-script
+The main insight was realizing that CGI is just HTTP over different transports. So I built an abstraction that lets you write the same C# code whether you're:
+- Running as a traditional CGI script (stdin/stdout)  
+- Running as a TCP service (socket)
+- Running as something else entirely (future FastCGI support?)
+
+You just focus on the HTTP logic - method, path, headers, body. The transport layer is somebody else's problem.
+
+Plus, it uses C# scripting (dotnet-script), so no compilation step. Just run the `.csx` file.
 
 ## Quick Start
 
@@ -114,34 +117,27 @@ cgi.csx                    # Core abstraction
     └── hello-service.csx     # Example service
 ```
 
-## Integration with Process Pool
+## How it plugs into the main system
 
-This C# abstraction is fully integrated with the CGI process pool system:
+The C# abstraction works seamlessly with the process pool:
 
-### Automatic Service Discovery
-- Services defined in `discovery/manifest.json` are automatically built and managed
-- The `csharp_abstraction` service runs the hello-service example on port 8005
-- YARP proxy automatically routes `/csharp_abstraction/*` to the service
+- Services are defined in `discovery/manifest.json` and get discovered automatically
+- The example service (`hello-service.csx`) runs on port 8005 and gets managed like any other CGI process
+- YARP routes `/csharp_abstraction/*` to it
+- The dynamic port system handles everything - no hardcoded ports to worry about
 
-### Dynamic Port Management
-- Pool manager assigns ports dynamically to avoid conflicts
-- Runtime port assignments written to `/tmp/cgi_ports.json`
-- YARP configuration uses actual running ports, not hardcoded values
-- Build system ensures clean state with `make all` running `clean` first
-
-### Development Workflow
+Want to test it?
 ```bash
-# Complete system build and start
+# Start everything
 make start
 
-# Test the C# abstraction service
+# Hit the C# service through YARP
 curl http://localhost:8080/csharp_abstraction/
 curl http://localhost:8080/csharp_abstraction/hello?name=World
 curl http://localhost:8080/csharp_abstraction/health
-
-# Check service status in admin dashboard
-curl http://localhost:8080/admin
 ```
+
+The service gets the same monitoring, health checks, and load balancing as everything else.
 
 ## Compatibility
 
