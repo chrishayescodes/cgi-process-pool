@@ -159,22 +159,41 @@ class PoolManager:
             self.update_nginx_config()
     
     def update_nginx_config(self):
-        """Generate nginx upstream configuration"""
+        """Generate nginx upstream configuration and JSON port mapping"""
+        # Generate nginx upstream configuration
         config = "# Auto-generated upstream configuration\n"
         config += f"# Generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        
+        # Collect service port information for JSON output
+        services_data = {}
         
         for name, pool in self.pools.items():
             ports = pool.get_process_ports()
             if ports:
+                # Add to nginx config
                 config += f"upstream {name}_pool {{\n"
                 config += "    least_conn;\n"
                 for port in ports:
                     config += f"    server 127.0.0.1:{port} max_fails=3 fail_timeout=10s;\n"
                 config += "}\n\n"
+                
+                # Add to services data for JSON
+                services_data[name] = ports
         
+        # Write nginx configuration file
         os.makedirs('/tmp', exist_ok=True)
         with open('/tmp/cgi_upstreams.conf', 'w') as f:
             f.write(config)
+        
+        # Generate JSON port mapping
+        json_data = {
+            "services": services_data,
+            "generated_at": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+        }
+        
+        # Write JSON file
+        with open('/tmp/cgi_ports.json', 'w') as f:
+            json.dump(json_data, f, indent=2)
     
     def shutdown(self):
         """Gracefully shutdown all pools"""

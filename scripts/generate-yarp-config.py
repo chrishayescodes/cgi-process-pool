@@ -21,6 +21,23 @@ def load_manifest(manifest_path):
         print(f"Error: Invalid JSON in manifest file: {e}")
         sys.exit(1)
 
+def load_runtime_ports():
+    """Load actual running ports from pool manager"""
+    runtime_ports_path = "/tmp/cgi_ports.json"
+    try:
+        with open(runtime_ports_path, 'r') as f:
+            data = json.load(f)
+            print(f"📍 Using runtime ports from {runtime_ports_path}")
+            return data.get('services', {})
+    except FileNotFoundError:
+        print(f"⚠️  Runtime ports file not found at {runtime_ports_path}")
+        print("   Falling back to manifest default_ports")
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"⚠️  Invalid JSON in runtime ports file: {e}")
+        print("   Falling back to manifest default_ports")
+        return {}
+
 def create_route_config(service_key, service_info):
     """Create a YARP route configuration for a service"""
     api_endpoint = service_info.get('api_endpoint', '')
@@ -61,20 +78,27 @@ def create_route_config(service_key, service_info):
     
     return route_id, route_config
 
-def create_cluster_config(service_key, service_info):
+def create_cluster_config(service_key, service_info, runtime_ports=None):
     """Create a YARP cluster configuration for a service"""
-    default_ports = service_info.get('default_ports', [])
+    # Use runtime ports if available, otherwise fall back to manifest ports
+    if runtime_ports and service_key in runtime_ports:
+        ports = runtime_ports[service_key]
+        print(f"  Using runtime ports for {service_key}: {ports}")
+    else:
+        ports = service_info.get('default_ports', [])
+        if ports:
+            print(f"  Using manifest ports for {service_key}: {ports}")
     
-    if not default_ports:
-        print(f"Warning: Service {service_key} has no default ports, skipping")
+    if not ports:
+        print(f"Warning: Service {service_key} has no ports available, skipping")
         return None
     
     cluster_id = f"{service_key}-cluster"
     
     # Create destinations for each port
     destinations = {}
-    for i, port in enumerate(default_ports):
-        if len(default_ports) == 1:
+    for i, port in enumerate(ports):
+        if len(ports) == 1:
             dest_id = f"{service_key}-1"
         else:
             dest_id = f"{service_key}-{i + 1}"
@@ -104,7 +128,7 @@ def create_cluster_config(service_key, service_info):
     return cluster_id, cluster_config
 
 def create_admin_routes():
-    """Create the admin routes that are always needed"""
+    """Create the admin routes that are always needed - only for static content, not API"""
     return {
         "admin-route": {
             "ClusterId": "admin-cluster",
@@ -113,16 +137,6 @@ def create_admin_routes():
             },
             "Transforms": [
                 {"PathRemovePrefix": "/admin"}
-            ]
-        },
-        "admin-api-route": {
-            "ClusterId": "admin-cluster",
-            "Match": {
-                "Path": "/admin-api/{**catch-all}"
-            },
-            "Transforms": [
-                {"PathRemovePrefix": "/admin-api"},
-                {"PathPrefix": "/api"}
             ]
         },
         "root-route": {
@@ -139,7 +153,7 @@ def create_admin_clusters():
         "admin-cluster": {
             "Destinations": {
                 "admin-1": {
-                    "Address": "http://127.0.0.1:5000/"
+                    "Address": "http://127.0.0.1:8080/"
                 }
             }
         }
@@ -149,6 +163,9 @@ def generate_yarp_config(manifest_path, output_path):
     """Generate the complete YARP configuration"""
     print(f"Loading manifest from: {manifest_path}")
     manifest = load_manifest(manifest_path)
+    
+    # Load runtime ports if available
+    runtime_ports = load_runtime_ports()
     
     # Load base configuration template
     base_config_path = os.path.join(os.path.dirname(output_path), "appsettings.base.json")
@@ -191,7 +208,7 @@ def generate_yarp_config(manifest_path, output_path):
             config["ReverseProxy"]["Routes"][route_id] = route_config
         
         # Create cluster configuration
-        cluster_result = create_cluster_config(service_key, service_info)
+        cluster_result = create_cluster_config(service_key, service_info, runtime_ports)
         if cluster_result:
             cluster_id, cluster_config = cluster_result
             config["ReverseProxy"]["Clusters"][cluster_id] = cluster_config

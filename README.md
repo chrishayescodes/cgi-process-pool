@@ -13,6 +13,7 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 - **🔧 CGI Process Pool**: C-based HTTP servers with socket communication
 - **🐍 Python CGI Support**: Full Python integration with automated tooling
 - **🔷 C# Script Support**: C# script execution with dotnet-script runtime
+- **🎯 C# CGI Abstraction**: Transport-agnostic abstraction layer for modern C# services
 - **⚡ YARP Reverse Proxy**: Modern .NET-based load balancing and routing  
 - **📊 Integrated Admin Dashboard**: Real-time monitoring with live metrics
 - **🔄 Load Balancing**: Round-robin distribution with health checks
@@ -23,6 +24,7 @@ A modern implementation of CGI-style process pools using YARP (Yet Another Rever
 - **🛠️ Hardened Process Management**: Production-ready lifecycle management with graceful shutdown
 - **🧹 Orphan Process Cleanup**: Automatic detection and cleanup of stuck processes
 - **📋 Unified Operations**: Single-command system startup, monitoring, and shutdown
+- **⚙️ Dynamic Port Management**: Runtime port allocation with automatic YARP configuration
 
 ## 🚀 Quick Start
 

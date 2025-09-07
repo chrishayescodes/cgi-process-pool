@@ -10,7 +10,7 @@ TARGETS := $(shell ./discovery/discovery.py targets 2>/dev/null || echo "build/s
 
 .PHONY: all clean test run-pool run-demo run-yarp check-deps samples discover start stop restart status cleanup
 
-all: $(BUILD_DIR) $(TARGETS) proxy/CGIProxy/appsettings.json
+all: clean $(BUILD_DIR) $(TARGETS) proxy/CGIProxy/appsettings.json
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -34,6 +34,7 @@ proxy/CGIProxy/appsettings.json: discovery/manifest.json proxy/CGIProxy/appsetti
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f /tmp/cgi_upstreams.conf
+	rm -f /tmp/cgi_ports.json
 	rm -f Makefile.rules
 	rm -f proxy/CGIProxy/appsettings.json
 	git clean -dfx

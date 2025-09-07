@@ -114,9 +114,39 @@ cgi.csx                    # Core abstraction
     └── hello-service.csx     # Example service
 ```
 
+## Integration with Process Pool
+
+This C# abstraction is fully integrated with the CGI process pool system:
+
+### Automatic Service Discovery
+- Services defined in `discovery/manifest.json` are automatically built and managed
+- The `csharp_abstraction` service runs the hello-service example on port 8005
+- YARP proxy automatically routes `/csharp_abstraction/*` to the service
+
+### Dynamic Port Management
+- Pool manager assigns ports dynamically to avoid conflicts
+- Runtime port assignments written to `/tmp/cgi_ports.json`
+- YARP configuration uses actual running ports, not hardcoded values
+- Build system ensures clean state with `make all` running `clean` first
+
+### Development Workflow
+```bash
+# Complete system build and start
+make start
+
+# Test the C# abstraction service
+curl http://localhost:8080/csharp_abstraction/
+curl http://localhost:8080/csharp_abstraction/hello?name=World
+curl http://localhost:8080/csharp_abstraction/health
+
+# Check service status in admin dashboard
+curl http://localhost:8080/admin
+```
+
 ## Compatibility
 
 - Works with the existing CGI process pool manager
-- Compatible with YARP proxy configurations
+- Compatible with YARP proxy configurations  
 - Supports gradual migration from raw socket code
+- Integrated with dynamic port allocation system
 - Future support planned for FastCGI transport

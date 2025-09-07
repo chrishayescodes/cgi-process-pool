@@ -11,6 +11,7 @@ logs/
 
 # Temporary files
 /tmp/cgi_upstreams.conf
+/tmp/cgi_ports.json
 
 # Python cache
 __pycache__/

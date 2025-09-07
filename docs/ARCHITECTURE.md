@@ -8,7 +8,10 @@ Modern CGI-style architecture with YARP reverse proxy, comprehensive monitoring,
 ### 1. CGI Process Pool
 - **Search Service**: C-based processes on ports 8000-8001
 - **Auth Service**: C-based process on port 8002  
-- **Pool Manager**: Python service managing process lifecycle
+- **Python CGI Service**: Python-based process on port 8003
+- **C# Script Service**: C# dotnet-script process on port 8004
+- **C# Abstraction Service**: Transport-agnostic C# service on port 8005
+- **Pool Manager**: Python service managing process lifecycle with dynamic port allocation
 
 ### 2. YARP Reverse Proxy (Port 8080)
 - **Load Balancing**: Round-robin across CGI processes
@@ -23,12 +26,36 @@ Modern CGI-style architecture with YARP reverse proxy, comprehensive monitoring,
 
 ## Request Flow
 ```
-Client Request → YARP Proxy (8080) → CGI Processes (8000-8002) → Response
+Client Request → YARP Proxy (8080) → CGI Processes (8000-8005) → Response
                       ↓
               Request Logging Middleware
                       ↓  
               Metrics Collection & Storage
 ```
+
+## Dynamic Port Management
+
+The system implements intelligent port management to eliminate conflicts and enable flexible deployment:
+
+### Build-Time Configuration
+1. **Clean Builds**: `make all` now runs `clean` first, ensuring fresh state
+2. **YARP Config Generation**: Python script generates proxy configuration from manifest
+3. **Fallback Strategy**: Uses manifest default ports when runtime data unavailable
+
+### Runtime Port Allocation
+1. **Pool Manager**: Dynamically assigns available ports to services
+2. **Port Mapping**: Creates `/tmp/cgi_ports.json` with actual running ports
+3. **Configuration Update**: YARP config uses runtime ports when available
+
+### Port Files
+- `/tmp/cgi_ports.json` - Runtime port assignments (ignored by git)
+- `/tmp/cgi_upstreams.conf` - Nginx upstream configuration (ignored by git)
+- `proxy/CGIProxy/appsettings.json` - Generated YARP configuration
+
+### Port Resolution Priority
+1. **Runtime Ports**: Read from `/tmp/cgi_ports.json` if available
+2. **Manifest Ports**: Fall back to `default_ports` in `discovery/manifest.json`
+3. **Dynamic Assignment**: Pool manager finds available ports automatically
 
 ## Key Features
 
